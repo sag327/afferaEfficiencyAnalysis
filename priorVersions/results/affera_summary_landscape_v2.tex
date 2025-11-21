@@ -1,0 +1,71 @@
+
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{pdflscape}
+\usepackage{tabularx}
+\usepackage{array}
+\sisetup{detect-all}
+
+\begin{document}
+
+\section*{Statistical Methods}
+
+We performed a retrospective single-center analysis of consecutive atrial fibrillation ablation procedures before and after clinical introduction of the Affera system. The primary endpoint was total procedure duration (minutes). Analyses were conducted at the procedure level with operators treated as a clustering factor. Because procedure duration was right-skewed, we modeled the natural logarithm of duration using linear mixed-effects regression.
+
+For the primary comparison of Affera versus non-Affera procedures (Question~1), we fit models of the form
+\emph{log(duration)} $\sim$ Affera indicator $+$ continuous time (days since study start) with a random intercept for operator. Estimates for the Affera effect are reported as fixed-effect coefficients on the log scale with 95\% confidence intervals (CIs); these correspond to multiplicative effects on the geometric mean procedure duration (i.e., approximate percentage differences in time). The time term accounts for secular changes in procedural efficiency over the study period.
+
+To evaluate within-operator learning with the Affera system (Question~2), we restricted the dataset to Affera procedures and added the within-operator Affera case index (affera\_index) as a fixed effect, along with a random slope on affera\_index by operator. Baseline operator speed was quantified using pre-Affera, non-PFA pulmonary vein isolation (PVI) procedures only. For each eligible operator, we identified up to the 17 most recent pre-Affera PVI, non-PFA cases and computed the mean baseline duration; this value was then centered and scaled to have mean zero and unit variance to form the baseline\_speed\_operator covariate. Operators were required to have at least 10 eligible baseline cases to contribute to baseline-dependent analyses.
+
+To address whether baseline operator speed modified the Affera versus non-Affera effect (Question~4), we added an interaction term between baseline\_speed\_operator and the Affera indicator in models including both Affera and non-Affera procedures. For Question~4, we required each operator to have at least 10 Affera cases and at least 10 non-Affera cases. All models were fit separately for (1) all eligible procedures, (2) PVI-only procedures, and (3) more complex PVI+ procedures. Mixed-effects models were estimated by maximum likelihood using MATLAB (fitlme), and two-sided $p$-values $<0.05$ were considered statistically significant.
+
+%\begin{landscape}
+\section*{Results Summary Table}
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Summary of Affera learning-curve analyses across procedure types (restricted baseline, standardized to 17 pre-Affera PVI, non-PFA cases per operator)}
+\label{tab:affera_summary_landscape}
+\begin{tabularx}{\linewidth}{l *{3}{>{\centering\arraybackslash}X}}
+\toprule
+\textbf{Outcome / Effect} & \textbf{All procedures} & \textbf{PVI only} & \textbf{PVI+} \\
+\midrule
+\multicolumn{4}{l}{\textbf{Sample size and baseline}} \\
+Q1: N procedures in Affera vs.\ non-Affera model        & 3{,}040   & 1{,}300   & 1{,}693   \\
+Q2: N Affera procedures in learning-curve model         & 1{,}179   & 426       & 749       \\
+Q4: N procedures in Affera $\times$ baseline model      & 2{,}846   & 1{,}300   & 1{,}536   \\
+Baseline operators with valid baseline                  & 14        & 14        & 14        \\
+Baseline cases per operator (global)                    & 17        & 17        & 17        \\
+Total baseline procedures used (all operators)          & 238       & 238       & 238       \\
+Baseline restriction                                    & \multicolumn{3}{c}{Pre-Affera, non-PFA PVI only; 17 most recent cases per eligible operator} \\
+\midrule
+\multicolumn{4}{l}{\textbf{Question 1: Overall Affera effect (Affera vs.\ non-Affera)}} \\
+Affera vs.\ non-Affera (log diff)       & $-0.1109$  & $-0.1407$  & $-0.1752$  \\
+95\% CI                                  & ($-0.1456$, $-0.0763$) & ($-0.1916$, $-0.0898$) & ($-0.2186$, $-0.1318$) \\
+$p$-value                                & $3.9 \times 10^{-10}$ & $7.0 \times 10^{-8}$ & $4.2 \times 10^{-15}$ \\
+Approx.\ percent faster with Affera      & $\approx 10.5\%$ & $\approx 13.1\%$ & $\approx 16.1\%$ \\
+\midrule
+\multicolumn{4}{l}{\textbf{Question 2: Affera learning curve (within-operator)}} \\
+Per-case change in log duration (affera\_index)  & $-0.0014$ & $-0.0030$ & $-0.0012$ \\
+95\% CI                                          & ($-0.0028$, $0.0001$) & ($-0.0080$, $0.0021$) & ($-0.0025$, $0.0000$) \\
+$p$-value                                        & $0.066$   & $0.254$   & $0.059$   \\
+Interpretation                                   & Borderline improvement & Not significant & Borderline improvement \\
+\midrule
+\multicolumn{4}{l}{\textbf{Question 4: Baseline speed $\times$ Affera effect}} \\
+Interaction estimate (Affera $\times$ baseline\_speed\_operator) & $-0.0112$ & $-0.0362$ & $-0.0161$ \\
+95\% CI                                                          & ($-0.0390$, $0.0166$) & ($-0.0747$, $0.0024$) & ($-0.0528$, $0.0206$) \\
+$p$-value                                                        & $0.430$   & $0.066$   & $0.389$   \\
+Interpretation                                                   & No evidence of differential benefit by baseline speed & Borderline trend toward greater benefit in slower operators & No evidence of differential benefit by baseline speed \\
+\midrule
+Secular time trend (per day, log scale)  & $-0.00044$ & $-0.00029$ & $-0.00043$ \\
+Interpretation                           & Center-wide efficiency improving over time & Similar & Similar \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+%\end{landscape}
+
+\end{document}

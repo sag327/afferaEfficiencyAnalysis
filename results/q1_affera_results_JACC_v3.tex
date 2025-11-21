@@ -1,0 +1,66 @@
+
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{array}
+\usepackage{longtable}
+
+\begin{document}
+
+\section*{Statistical Methods}
+
+We performed a retrospective observational analysis of atrial fibrillation (AF) ablation procedures to evaluate the effect of the Affera pulsed-field ablation (PFA) system on total procedure duration. The analytic cohort included all non–PFA AF ablations performed in the six months prior to Affera adoption (pre-Affera baseline), all Affera cases performed after adoption, and all non–PFA AF ablations performed after Affera introduction. Inclusion of both pre- and post-Affera non–PFA procedures allowed estimation of secular efficiency trends and separation of technology-specific effects from temporal changes in practice.
+
+Procedure duration was modeled using a linear mixed-effects framework with the natural logarithm of duration as the dependent variable. Fixed effects included Affera use, procedural complexity (pulmonary vein isolation [PVI] vs.\ PVI with additional ablation [PVI+]), calendar time, and an interaction term assessing whether the Affera effect differed between PVI and PVI+ procedures. Operator identity was included as a random intercept to account for baseline differences in operator efficiency.
+
+\section*{Results}
+
+A total of 1,752 AF ablation procedures performed by 11 operators met inclusion criteria, including 513 pre-Affera non–PFA procedures, 225 post-Affera non–PFA procedures, and 1,014 Affera procedures. Of these, 617 were PVI-only and 1,135 were PVI+.
+
+\subsection*{Procedure Durations}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Group} & \textbf{n} & \textbf{Mean (min)} & \textbf{Median (min)} \\
+\midrule
+Pre-Affera non–PFA (all) & 513 & 97.5 & 92.0 \\
+Pre-Affera non–PFA (PVI) & 180 & 84.5 & 80.0 \\
+Pre-Affera non–PFA (PVI+) & 333 & 104.5 & 98.0 \\
+Post-Affera non–PFA (all) & 225 & 87.5 & 84.0 \\
+Post-Affera non–PFA (PVI) & 76 & 71.9 & 74.0 \\
+Post-Affera non–PFA (PVI+) & 149 & 95.3 & 88.0 \\
+Affera (all) & 1,014 & 74.2 & 69.0 \\
+Affera (PVI) & 361 & 65.6 & 62.0 \\
+Affera (PVI+) & 653 & 78.9 & 73.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Mixed-Effects Model Estimates}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Effect} & \textbf{Estimate (log scale)} & \textbf{95\% CI} & \textbf{Percent Change} \\
+\midrule
+Affera use (PVI) & -0.085 & [-0.146, -0.023] & -8.1\% \\
+Affera effect in PVI+ (additional) & -0.064 & [-0.128, -0.000] & -6.2\% \\
+Calendar time (per day) & -0.001 & [-0.001, -0.000] & -0.1\% per day \\
+PVI+ vs.\ PVI & 0.280 & [0.230, 0.330] & +32.3\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+After adjustment for operator-level variation and secular time trends, use of the Affera PFA system was associated with an 8.1\% reduction in procedure duration for PVI-only cases (95\% CI: 2.3\% to 13.6\%). PVI+ procedures were 32\% longer than PVI procedures overall (95\% CI: 26\% to 39\%). The combined effect of Affera for PVI+ procedures corresponded to a 14.3\% reduction in duration, representing an expected savings of approximately 12–15 minutes for a typical complex ablation. The secular trend indicated a 0.1\% daily improvement in procedure duration, corresponding to roughly 27–30\% annual gains independent of technology.
+
+Weighting by the distribution of PVI and PVI+ procedures, the overall adjusted effect of Affera across all AF ablations was a 12.1\% reduction in procedure duration.
+
+\section*{Conclusion}
+
+After accounting for secular improvements in laboratory efficiency and operator-level differences, the Affera PFA system was associated with meaningful reductions in AF ablation duration, particularly for more complex PVI+ procedures.
+
+\end{document}

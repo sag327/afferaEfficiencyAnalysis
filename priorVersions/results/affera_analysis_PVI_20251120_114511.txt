@@ -1,0 +1,307 @@
+Affera Analysis Report
+======================
+
+Procedure type filter       : PVI
+MinAfferaCases (per-operator Affera threshold): 10
+  Q1: >=MinAfferaCases post-Affera Affera cases AND >=10 pre-Affera non-Affera cases
+  Q2: >=MinAfferaCases Affera cases
+  Q3: baseline available AND >=MinAfferaCases Affera cases
+  Q4: baseline available AND >=MinAfferaCases Affera cases AND >=10 non-Affera cases
+Baseline restricted to PVI  : YES
+Non-PFA baseline only       : YES
+Baseline min cases/operator  : 10
+Baseline max cases/operator  : 50
+
+Baseline summary:
+  Operators with baseline   : 14 of 19
+  baseline_n_cases_global   : 17
+  Baseline is computed from the 17 most recent pre-Affera PVI, non-PFA (non-Affera) cases per operator,
+  among operators with at least 10 eligible baseline cases.
+
+Question 1 – Overall Affera effect
+  log-duration diff (Affera vs non-Affera): -0.1407 (95% CI -0.1916, -0.0898), p = 7.03e-08
+
+Question 2 – Affera learning curve
+  Per-case change in log-duration (index): -0.0030 (95% CI -0.0080, 0.0021), p = 0.254
+
+Question 3 – Baseline speed × learning
+  index × baseline_speed term not found in model.
+
+Question 4 – Baseline speed × Affera effect
+  Interaction (Affera × baseline speed): -0.0362 (95% CI -0.0747, 0.0024), p = 0.0657
+
+
+Detailed results
+----------------
+
+Operator-level case summary:
+operator_id                pre_non post_aff   affera  non_aff baseline   baseline_z
+ARSHAD, AYSHA                   42       40       40       60        1       0.7025
+ATWATER, BRETT D                54       38       38       69        1      -0.1583
+COHEN, MITCHELL I                0        0        0        1        0          NaN
+FEIN, ADAM S                    61       54       54       73        1      -0.9396
+GAETA, STEPHEN A                53       29       29       85        1      -1.2133
+GARG, KEVA                       0        2        2        0        0          NaN
+HELD, ELIZABETH                 29       23       23       51        1      -0.0489
+HOLLIS, ZACHARY T               37       14       14       53        1      -0.2006
+KUMAR, VINEET                   48       48       48       62        1       0.7249
+LASLETT, DAVID                   0       21       21        1        0          NaN
+LEE, JAE I                       0        0        0        4        0          NaN
+LEE, JOSEPH C                   37       42       42       56        1       1.5161
+MCSWAIN, ROBERT L               40       10       10       80        1       1.5410
+MONIREDDIN GHAZVINI, MOHAMMAD       37       11       11       44        1       1.0210
+RASHID, HAROON                  56       16       16       72        1      -0.8451
+SANDESARA, CHIRAG M             76       40       40      128        1      -1.7059
+WISH, MARC H                     1        0        0        1        0          NaN
+YANG, EUNICE                    45       40       40       62        1       0.0681
+YOUSUF, OMAIR K                 21        0        0       21        1      -0.4619
+
+Baseline summary table:
+operator_id               pre_base   N_used     mean_dur   baseline_z
+ARSHAD, AYSHA                   26       17     107.5882       0.7025
+ATWATER, BRETT D                51       17      87.2353      -0.1583
+COHEN, MITCHELL I                0       17          NaN          NaN
+FEIN, ADAM S                    47       17      68.7647      -0.9396
+GAETA, STEPHEN A                50       17      62.2941      -1.2133
+GARG, KEVA                       0       17          NaN          NaN
+HELD, ELIZABETH                 17       17      89.8235      -0.0489
+HOLLIS, ZACHARY T               35       17      86.2353      -0.2006
+KUMAR, VINEET                   40       17     108.1176       0.7249
+LASLETT, DAVID                   0       17          NaN          NaN
+LEE, JAE I                       0       17          NaN          NaN
+LEE, JOSEPH C                   27       17     126.8235       1.5161
+MCSWAIN, ROBERT L               30       17     127.4118       1.5410
+MONIREDDIN GHAZVINI, MOHAMMAD       29       17     115.1176       1.0210
+RASHID, HAROON                  41       17      71.0000      -0.8451
+SANDESARA, CHIRAG M             69       17      50.6471      -1.7059
+WISH, MARC H                     1       17          NaN          NaN
+YANG, EUNICE                    42       17      92.5882       0.0681
+YOUSUF, OMAIR K                 21       17      80.0588      -0.4619
+
+Excluded operators by question:
+  Q1 exclusions:
+    operator_id                pre_non post_aff
+    COHEN, MITCHELL I                0        0
+    GARG, KEVA                       0        2
+    LASLETT, DAVID                   0       21
+    LEE, JAE I                       0        0
+    WISH, MARC H                     1        0
+    YOUSUF, OMAIR K                 21        0
+
+  Q2 exclusions:
+    operator_id                 affera
+    COHEN, MITCHELL I                0
+    GARG, KEVA                       2
+    LEE, JAE I                       0
+    WISH, MARC H                     0
+    YOUSUF, OMAIR K                  0
+
+  Q3 exclusions:
+    operator_id               baseline   affera
+    COHEN, MITCHELL I                0        0
+    GARG, KEVA                       0        2
+    LASLETT, DAVID                   0       21
+    LEE, JAE I                       0        0
+    WISH, MARC H                     0        0
+    YOUSUF, OMAIR K                  1        0
+
+  Q4 exclusions:
+    operator_id               baseline   affera  non_aff
+    COHEN, MITCHELL I                0        0        1
+    GARG, KEVA                       0        2        0
+    LASLETT, DAVID                   0       21        1
+    LEE, JAE I                       0        0        4
+    WISH, MARC H                     0        0        1
+    YOUSUF, OMAIR K                  1        0       21
+
+Full Q1 model output:
+
+Linear mixed-effects model fit by ML
+
+Model information:
+    Number of observations            1300
+    Fixed effects coefficients           3
+    Random effects coefficients         13
+    Covariance parameters                2
+
+Formula:
+    log_duration ~ 1 + is_affera + time_days + (1 | operator_id)
+
+Model fit statistics:
+    AIC       BIC       LogLikelihood    Deviance
+    812.91    838.76    -401.46          802.91  
+
+Fixed effects coefficients (95% CIs):
+    Name                   Estimate       SE            tStat      DF  
+    {'(Intercept)'}             4.5044      0.061764      72.93    1297
+    {'is_affera_1'}           -0.14071      0.025952    -5.4218    1297
+    {'time_days'  }        -0.00029635    5.9227e-05    -5.0037    1297
+
+
+    pValue        Lower          Upper      
+             0         4.3832         4.6256
+    7.0291e-08       -0.19162      -0.089793
+    6.3969e-07    -0.00041254    -0.00018016
+
+Random effects covariance parameters (95% CIs):
+Group: operator_id (13 Levels)
+    Name1                  Name2                  Type           Estimate
+    {'(Intercept)'}        {'(Intercept)'}        {'std'}        0.21047 
+
+
+    Lower     Upper  
+    0.1419    0.31217
+
+Group: Error
+    Name               Estimate    Lower      Upper  
+    {'Res Std'}        0.32342     0.31117    0.33616
+
+
+
+Full Q2 model output:
+
+Linear mixed-effects model fit by ML
+
+Model information:
+    Number of observations             426
+    Fixed effects coefficients           3
+    Random effects coefficients         28
+    Covariance parameters                4
+
+Formula:
+    Linear Mixed Formula with 3 predictors.
+
+Model fit statistics:
+    AIC      BIC       LogLikelihood    Deviance
+    60.93    89.311    -23.465          46.93   
+
+Fixed effects coefficients (95% CIs):
+    Name                    Estimate       SE            tStat       DF 
+    {'(Intercept)' }             4.4474       0.17323      25.673    423
+    {'time_days'   }        -0.00031517    0.00034784    -0.90608    423
+    {'affera_index'}         -0.0029562       0.00259     -1.1414    423
+
+
+    pValue        Lower          Upper     
+    2.6164e-88         4.1069        4.7879
+       0.36541    -0.00099889    0.00036854
+       0.25436     -0.0080472     0.0021348
+
+Random effects covariance parameters (95% CIs):
+Group: operator_id (14 Levels)
+    Name1                   Name2                   Type            Estimate  
+    {'(Intercept)' }        {'(Intercept)' }        {'std' }           0.21438
+    {'affera_index'}        {'(Intercept)' }        {'corr'}                 1
+    {'affera_index'}        {'affera_index'}        {'std' }        0.00053984
+
+
+    Lower         Upper   
+       0.13846     0.33193
+           NaN         NaN
+    3.9565e-06    0.073658
+
+Group: Error
+    Name               Estimate    Lower      Upper 
+    {'Res Std'}        0.24272     0.22668    0.2599
+
+
+
+Full Q3 model output:
+
+Linear mixed-effects model fit by ML
+
+Model information:
+    Number of observations             405
+    Fixed effects coefficients           5
+    Random effects coefficients         26
+    Covariance parameters                4
+
+Formula:
+    Linear Mixed Formula with 4 predictors.
+
+Model fit statistics:
+    AIC       BIC       LogLikelihood    Deviance
+    51.729    87.764    -16.865          33.729  
+
+Fixed effects coefficients (95% CIs):
+    Name                                            Estimate       SE        
+    {'(Intercept)'                         }             4.4422       0.15862
+    {'time_days'                           }        -0.00034448    0.00033179
+    {'baseline_speed_operator'             }            0.17354      0.044751
+    {'affera_index'                        }         -0.0025664     0.0024422
+    {'baseline_speed_operator:affera_index'}         0.00055391     0.0010672
+
+
+    tStat      DF     pValue        Lower          Upper     
+     28.004    400    2.5879e-96         4.1304         4.754
+    -1.0382    400       0.29979    -0.00099675    0.00030779
+      3.878    400    0.00012311       0.085566       0.26152
+    -1.0509    400       0.29395     -0.0073676     0.0022347
+    0.51904    400       0.60402     -0.0015441     0.0026519
+
+Random effects covariance parameters (95% CIs):
+Group: operator_id (13 Levels)
+    Name1                   Name2                   Type            Estimate  
+    {'(Intercept)' }        {'(Intercept)' }        {'std' }           0.13682
+    {'affera_index'}        {'(Intercept)' }        {'corr'}               NaN
+    {'affera_index'}        {'affera_index'}        {'std' }        0.00034685
+
+
+    Lower    Upper
+    NaN      NaN  
+    NaN      NaN  
+    NaN      NaN  
+
+Group: Error
+    Name               Estimate    Lower    Upper
+    {'Res Std'}        0.24291     NaN      NaN  
+
+
+
+Full Q4 model output:
+
+Linear mixed-effects model fit by ML
+
+Model information:
+    Number of observations            1300
+    Fixed effects coefficients           5
+    Random effects coefficients         13
+    Covariance parameters                2
+
+Formula:
+    Linear Mixed Formula with 4 predictors.
+
+Model fit statistics:
+    AIC       BIC       LogLikelihood    Deviance
+    786.25    822.44    -386.12          772.25  
+
+Fixed effects coefficients (95% CIs):
+    Name                                           Estimate       SE       
+    {'(Intercept)'                        }             4.4981     0.027178
+    {'is_affera_1'                        }           -0.14933     0.025882
+    {'time_days'                          }        -0.00029179    5.897e-05
+    {'baseline_speed_operator'            }             0.2091     0.021131
+    {'is_affera_1:baseline_speed_operator'}          -0.036175     0.019638
+
+
+    tStat      DF      pValue        Lower          Upper     
+      165.5    1295             0         4.4447        4.5514
+    -5.7695    1295    9.9366e-09        -0.2001     -0.098551
+     -4.948    1295    8.4817e-07    -0.00040747    -0.0001761
+     9.8956    1295    2.6296e-22        0.16765       0.25056
+     -1.842    1295      0.065697      -0.074701     0.0023517
+
+Random effects covariance parameters (95% CIs):
+Group: operator_id (13 Levels)
+    Name1                  Name2                  Type           Estimate
+    {'(Intercept)'}        {'(Intercept)'}        {'std'}        0.065869
+
+
+    Lower       Upper  
+    0.040796    0.10635
+
+Group: Error
+    Name               Estimate    Lower      Upper  
+    {'Res Std'}        0.32303     0.31079    0.33575
+
+
