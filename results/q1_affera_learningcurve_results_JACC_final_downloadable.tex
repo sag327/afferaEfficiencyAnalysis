@@ -46,25 +46,25 @@ Affera (PVI+)              & 653  & 78.9 & 73.0 \\
 \begin{landscape}
 \begin{table}[h!]
 \centering
-\begin{tabular}{lcccc}
+\begin{tabular}{lccc}
 \toprule
-\textbf{Effect} & \textbf{Estimate (log scale)} & \textbf{95\% CI} & \textbf{Percent Change} & \textbf{p-value} \\
+\textbf{Effect} & \textbf{Percent Change} & \textbf{95\% CI (percent)} & \textbf{p-value} \\
 \midrule
-Affera use (PVI) & -0.122 & [-0.188, -0.057] & -11.5\% & 0.000273 \\
-Affera effect in PVI+ (additional) & -0.064 & [-0.128, -0.001] & -6.2\% & 0.0475 \\
-Calendar time (per day) & -0.000 & [-0.001, -0.000] & -0.0\% per day & $4.78\times10^{-6}$ \\
-PVI+ vs.\ PVI & 0.281 & [0.231, 0.331] & +32.4\% & $4.18\times10^{-27}$ \\
-Affera learning (per Affera case) & -0.001 & [-0.002, -0.000] & -0.11\% per case & 0.00224 \\
+Affera use (PVI-only) & --11.5\% & [--17.2\%, --5.5\%] & 0.000273 \\
+Additional Affera effect in PVI+ & --6.2\% & [--12.0\%, --0.1\%] & 0.0475 \\
+PVI+ vs.\ PVI (baseline difference) & +32.4\% & [+25.9\%, +39.3\%] & $4.18\times10^{-27}$ \\
+Calendar time (per day) & --0.0\% & [--0.1\%, --0.0\%] & $4.78\times10^{-6}$ \\
+Affera learning (per Affera case) & --0.11\% & [--0.17\%, --0.04\%] & 0.00224 \\
 \bottomrule
 \end{tabular}
-\caption{Mixed-effects model estimates for log-transformed procedure duration. Affera effects are referenced to non-PFA PVI-only procedures; the additional PVI+ effect represents the Affera-by-complexity interaction.}
+\caption{Mixed-effects model estimates for procedure duration. Affera effects are referenced to non-PFA PVI-only procedures; the additional PVI+ effect represents the Affera-by-complexity interaction.}
 \label{tab:mixedmodel}
 \end{table}
 \end{landscape}
 
 In adjusted analyses (Table~\ref{tab:mixedmodel}), Affera use was associated with an 11.5\% reduction in PVI procedure duration compared with non-PFA PVI-only cases (95\% CI: 5.5\% to 17.2\%; p=0.000273). The Affera benefit was larger for complex PVI+ procedures, with an additional 6.2\% reduction beyond the PVI effect (95\% CI: 0.1\% to 12.0\%; p=0.0475), yielding an overall estimated reduction of approximately 17.7\% for PVI+ cases. Procedural complexity independently increased duration: PVI+ procedures were 32.4\% longer than PVI-only cases (p=$4.18\times10^{-27}$).
 
-Across all AF ablations (combining PVI-only and PVI+ procedures in their observed proportions), the Affera system was associated with an estimated 15.0\% reduction in total procedure duration (95\% CI: 8.2\% to 21.3\% reduction). This overall effect was derived from the mixed-effects model by weighting the Affera effect in PVI-only cases and the larger Affera effect in PVI+ cases according to their distribution in the dataset (36\% PVI-only, 64\% PVI+). The resulting estimate provides a single summary measure of the procedural efficiency benefit attributable to Affera across the full spectrum of AF ablation complexity.
+Across all AF ablations (combining PVI-only and PVI+ procedures in their observed proportions), the Affera system was associated with an estimated 15.1\% reduction in total procedure duration (95\% CI: 10.6\% to 19.4\% reduction). This overall effect was derived from the mixed-effects model by weighting the Affera effect in PVI-only cases and the larger Affera effect in PVI+ cases according to their distribution in the dataset (36\% PVI-only, 64\% PVI+). The resulting estimate provides a single summary measure of the procedural efficiency benefit attributable to Affera across the full spectrum of AF ablation complexity.
 
 The Affera learning-curve term was statistically significant but modest, corresponding to a 0.11\% reduction in duration per additional Affera case (95\% CI: 0.04\% to 0.17\%; p=0.00224). This translates to an approximate 2.0\% reduction between an operator’s first and twentieth Affera cases. After accounting for Affera adoption and Affera-specific learning, the residual secular time trend was near zero in magnitude and not clinically meaningful, despite statistical detectability (p=$4.78\times10^{-6}$).
 
