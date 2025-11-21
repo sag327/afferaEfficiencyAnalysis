@@ -1,4 +1,4 @@
-function [lme, results] = fit_q1_affera_model(tbl_q1)
+function [lme, results] = fit_q1_affera_model(tbl_q1, opts)
 % FIT_Q1_AFFERA_MODEL  Fit the specified mixed-effects model for Q1.
 %
 %   [lme, results] = fit_q1_affera_model(tbl_q1) fits the linear mixed-
@@ -10,6 +10,16 @@ function [lme, results] = fit_q1_affera_model(tbl_q1)
 %   struct containing fixed-effect estimates, confidence intervals, and
 %   percent effects, as well as descriptive duration statistics for
 %   baseline and Affera cohorts.
+%
+%   [...] = fit_q1_affera_model(tbl_q1, opts) enables an optional learning-
+%   curve term (Affera case index) when opts.enableLearningCurve is true.
+
+if nargin < 2 || isempty(opts)
+    opts = struct();
+end
+if ~isfield(opts, 'enableLearningCurve')
+    opts.enableLearningCurve = false;
+end
 
 requiredVars = {'log_duration', 'isAffera', 'isPVIplus', 'time_days', 'operator_id'};
 missingVars = setdiff(requiredVars, tbl_q1.Properties.VariableNames);
@@ -18,12 +28,22 @@ if ~isempty(missingVars)
         'Analysis table is missing required variables: %s', strjoin(missingVars, ', '));
 end
 
-lme = fitlme(tbl_q1, ...
-    'log_duration ~ isAffera * isPVIplus + time_days + (1|operator_id)');
+fixedFormula = 'log_duration ~ isAffera * isPVIplus + time_days';
+
+if opts.enableLearningCurve
+    if ~ismember('affera_index_ctr', tbl_q1.Properties.VariableNames)
+        error('fit_q1_affera_model:MissingAfferaIndex', ...
+            'Learning curve enabled but affera_index_ctr is missing.');
+    end
+    fixedFormula = [fixedFormula, ' + affera_index_ctr'];
+end
+
+lme = fitlme(tbl_q1, sprintf('%s + (1|operator_id)', fixedFormula));
 
 beta  = fixedEffects(lme);
 ci    = coefCI(lme);
 names = lme.CoefficientNames(:);
+pVals = lme.Coefficients.pValue;
 
 pct_est = (exp(beta)     - 1) * 100;
 pct_lo  = (exp(ci(:, 1)) - 1) * 100;
@@ -31,6 +51,54 @@ pct_hi  = (exp(ci(:, 2)) - 1) * 100;
 
 idxAffera = find(strcmp(names, 'isAffera'));
 idxAfferaPVIplus = find(strcmp(names, 'isAffera:isPVIplus'));
+idxAfferaIndex = find(strcmp(names, 'affera_index_ctr'));
+
+% Overall Affera effect across PVI/PVI+ case mix (linear contrast).
+overallAffera = struct();
+if ~isempty(idxAffera)
+    % Case-mix weight for PVI+ (using analysis dataset).
+    pPVIplus = mean(logical(tbl_q1.isPVIplus));
+
+    c = zeros(numel(beta), 1);
+    c(idxAffera) = 1;
+    if ~isempty(idxAfferaPVIplus)
+        c(idxAfferaPVIplus) = pPVIplus;
+    end
+
+    beta_overall = c' * beta;
+    covB = lme.CoefficientCovariance;
+    var_overall = c' * covB * c;
+    se_overall = sqrt(max(var_overall, 0));
+
+    df = lme.DFE;
+    if isfinite(df) && df > 0 && se_overall > 0
+        tcrit = tinv(0.975, df);
+        ci_overall = [beta_overall - tcrit * se_overall, ...
+                      beta_overall + tcrit * se_overall];
+    else
+        ci_overall = [NaN NaN];
+    end
+
+    p_overall = NaN;
+    try
+        p_overall = coefTest(lme, c');
+    catch
+        % Leave p_overall as NaN if contrast test fails.
+    end
+
+    pct_est_overall = (exp(beta_overall)      - 1) * 100;
+    pct_lo_overall  = (exp(ci_overall(1))     - 1) * 100;
+    pct_hi_overall  = (exp(ci_overall(2))     - 1) * 100;
+
+    overallAffera.beta     = beta_overall;
+    overallAffera.ci       = ci_overall;
+    overallAffera.pct_est  = pct_est_overall;
+    overallAffera.pct_lo   = pct_lo_overall;
+    overallAffera.pct_hi   = pct_hi_overall;
+    overallAffera.pValue   = p_overall;
+    overallAffera.pPVIplus = pPVIplus;
+    overallAffera.hasInteraction = ~isempty(idxAfferaPVIplus);
+end
 
 results = struct();
 results.names        = names;
@@ -39,8 +107,11 @@ results.ci           = ci;
 results.pct_est      = pct_est;
 results.pct_lo       = pct_lo;
 results.pct_hi       = pct_hi;
+results.pValue       = pVals;
 results.idxAffera    = idxAffera;
 results.idxAfferaPVIplus = idxAfferaPVIplus;
+results.idxAfferaIndex   = idxAfferaIndex;
+results.overallAffera    = overallAffera;
 
 % -------------------------------------------------------------------------
 % Descriptive duration summaries (baseline vs Affera, PVI vs PVI+,
