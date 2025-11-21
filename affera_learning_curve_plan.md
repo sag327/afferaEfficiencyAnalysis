@@ -279,6 +279,8 @@ Responsibilities (kept simple):
 
 This helper is called automatically whenever the learning-curve term is enabled; it does not change the model, only reports potential collinearity.
 
+> Reporting convention: As with the core Q1 model, all learning-curve fixed effects are estimated on the log-duration scale, but any **reported** learning-curve effects (console output, tables) should be expressed as **percent change in duration** (and corresponding 95% CIs and p-values). Log-scale coefficients and covariance are retained in the `lme` object and `results` struct for technical appendix use.
+
 ### 5. Extend `fit_q1_affera_model.m` (add one term)
 
 Update the function signature to optionally accept `opts`:

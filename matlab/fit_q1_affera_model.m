@@ -51,6 +51,11 @@ pct_hi  = (exp(ci(:, 2)) - 1) * 100;
 
 idxAffera = find(strcmp(names, 'isAffera'));
 idxAfferaPVIplus = find(strcmp(names, 'isAffera:isPVIplus'));
+if isempty(idxAfferaPVIplus)
+    base = 'isAffera:isPVIplus';
+    mask = strncmp(names, base, numel(base));
+    idxAfferaPVIplus = find(mask, 1);
+end
 idxAfferaIndex = find(strcmp(names, 'affera_index_ctr'));
 
 % Overall Affera effect across PVI/PVI+ case mix (linear contrast).
