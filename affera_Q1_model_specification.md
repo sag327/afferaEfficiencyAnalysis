@@ -108,6 +108,14 @@ lme = fitlme(tbl, ...
 - beta3 (time_days): Secular efficiency trend independent of Affera.
 - Random intercept (operator_id): Each operator has their own baseline duration; Affera effects are pooled across operators.
 
+Internally, all fixed effects are estimated on the **log-duration scale**, but all **reported** effects in the console summary are expressed as **percent change in duration** (with 95% CIs and p-values) via the transformation:
+
+```matlab
+pct = (exp(beta) - 1) * 100;
+```
+
+The saved `results` struct should contain both log-scale (`beta`, `ci`) and percent-scale (`pct_est`, `pct_lo`, `pct_hi`) quantities so that log-scale values remain available for technical appendices or downstream analyses.
+
 ---
 
 ## 5. Outputs Required
