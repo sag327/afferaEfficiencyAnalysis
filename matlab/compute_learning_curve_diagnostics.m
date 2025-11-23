@@ -1,11 +1,25 @@
-function diagnostics = compute_learning_curve_diagnostics(tbl_q1)
-% COMPUTE_LEARNING_CURVE_DIAGNOSTICS  Collinearity checks for learning term.
+function diagnostics = compute_learning_curve_diagnostics(tbl_q1, extraPredictors)
+% COMPUTE_LEARNING_CURVE_DIAGNOSTICS  Collinearity checks for key predictors.
 %
 %   diagnostics = compute_learning_curve_diagnostics(tbl_q1) computes
 %   correlations and variance inflation factors (VIF) for the predictors
 %   used in the learning-curve-augmented model.
+%
+%   diagnostics = compute_learning_curve_diagnostics(tbl_q1, extraPredictors)
+%   allows appending additional predictor names (cellstr) to the default
+%   list (e.g., baseline_speed_ctr for operator-effect models).
 
-predictors = {'isAffera', 'isPVIplus', 'time_days', 'affera_index_ctr'};
+if nargin < 2 || isempty(extraPredictors)
+    extraPredictors = {};
+end
+
+predictors = {'isAffera', 'isPVIplus', 'time_days'};
+if ismember('affera_index_ctr', tbl_q1.Properties.VariableNames)
+    predictors{end+1} = 'affera_index_ctr';
+end
+predictors = [predictors, extraPredictors(:).'];
+predictors = unique(predictors, 'stable');
+
 missing = setdiff(predictors, tbl_q1.Properties.VariableNames);
 if ~isempty(missing)
     error('compute_learning_curve_diagnostics:MissingVariables', ...

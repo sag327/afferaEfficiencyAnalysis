@@ -20,6 +20,9 @@ end
 if ~isfield(opts, 'enableLearningCurve')
     opts.enableLearningCurve = false;
 end
+if ~isfield(opts, 'EnableOperatorEffect')
+    opts.EnableOperatorEffect = false;
+end
 
 requiredVars = {'log_duration', 'isAffera', 'isPVIplus', 'time_days', 'operator_id'};
 missingVars = setdiff(requiredVars, tbl_q1.Properties.VariableNames);
@@ -36,6 +39,15 @@ if opts.enableLearningCurve
             'Learning curve enabled but affera_index_ctr is missing.');
     end
     fixedFormula = [fixedFormula, ' + affera_index_ctr'];
+end
+
+if opts.EnableOperatorEffect
+    if ~ismember('baseline_speed_ctr', tbl_q1.Properties.VariableNames)
+        error('fit_q1_affera_model:MissingBaselineSpeed', ...
+            'Operator effect enabled but baseline_speed_ctr is missing.');
+    end
+    fixedFormula = [fixedFormula, ' + baseline_speed_ctr'];
+    fixedFormula = [fixedFormula, ' + isAffera:baseline_speed_ctr'];
 end
 
 lme = fitlme(tbl_q1, sprintf('%s + (1|operator_id)', fixedFormula));
@@ -57,6 +69,13 @@ if isempty(idxAfferaPVIplus)
     idxAfferaPVIplus = find(mask, 1);
 end
 idxAfferaIndex = find(strcmp(names, 'affera_index_ctr'));
+idxBaselineSpeed = find(strcmp(names, 'baseline_speed_ctr'));
+idxAfferaBaseline = find(strcmp(names, 'isAffera:baseline_speed_ctr'));
+if isempty(idxAfferaBaseline)
+    base = 'isAffera:baseline_speed_ctr';
+    mask = strncmp(names, base, numel(base));
+    idxAfferaBaseline = find(mask, 1);
+end
 
 % Overall Affera effect across PVI/PVI+ case mix (linear contrast).
 overallAffera = struct();
@@ -116,6 +135,8 @@ results.pValue       = pVals;
 results.idxAffera    = idxAffera;
 results.idxAfferaPVIplus = idxAfferaPVIplus;
 results.idxAfferaIndex   = idxAfferaIndex;
+results.idxBaselineSpeed = idxBaselineSpeed;
+results.idxAfferaBaseline = idxAfferaBaseline;
 results.overallAffera    = overallAffera;
 
 % -------------------------------------------------------------------------
