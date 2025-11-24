@@ -43,11 +43,13 @@ p = inputParser;
 p.addParameter('BaselineDays', baseline_days, @(x) isnumeric(x) && isscalar(x));
 p.addParameter('MinCasesPerGroup', min_cases_per_group, @(x) isnumeric(x) && isscalar(x));
 p.addParameter('EnableLearningCurve', opts.enableLearningCurve, @(x) islogical(x) || isnumeric(x));
+p.addParameter('EnableOperatorEffect', false, @(x) islogical(x) || isnumeric(x));
 p.parse(varargin{:});
 
 baseline_days = p.Results.BaselineDays;
 min_cases_per_group = p.Results.MinCasesPerGroup;
 opts.enableLearningCurve = logical(p.Results.EnableLearningCurve);
+opts.EnableOperatorEffect = logical(p.Results.EnableOperatorEffect);
 opts.baseline_days = baseline_days;
 opts.min_cases_per_group = min_cases_per_group;
 
@@ -72,7 +74,18 @@ diagnostics = [];
 
 if opts.enableLearningCurve
     tbl_q1 = add_affera_learning_curve_variables(tbl_q1);
-    diagnostics = compute_learning_curve_diagnostics(tbl_q1);
+end
+
+if opts.EnableOperatorEffect
+    tbl_q1 = add_operator_baseline_speed(tbl_q1);
+end
+
+if opts.enableLearningCurve || opts.EnableOperatorEffect
+    extraPreds = {};
+    if opts.EnableOperatorEffect
+        extraPreds{end+1} = 'baseline_speed_ctr'; %#ok<AGROW>
+    end
+    diagnostics = compute_learning_curve_diagnostics(tbl_q1, extraPreds);
 end
 
 [lme, results] = fit_q1_affera_model(tbl_q1, opts);

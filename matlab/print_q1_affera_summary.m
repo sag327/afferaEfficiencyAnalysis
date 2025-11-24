@@ -250,6 +250,27 @@ if isfield(results, 'idxAfferaIndex') && ~isempty(results.idxAfferaIndex)
         pct_delta, pct_delta_lo, pct_delta_hi);
 end
 
+% Operator baseline efficiency effects.
+if isfield(results, 'idxBaselineSpeed') && ~isempty(results.idxBaselineSpeed)
+    i = results.idxBaselineSpeed;
+    fprintf('\nBaseline operator efficiency (non-PFA era):\n');
+    fprintf('  Percent change in duration per unit increase in baseline speed = %.1f%% [%.1f, %.1f]%%\n', ...
+        results.pct_est(i), results.pct_lo(i), results.pct_hi(i));
+    if isfield(results, 'pValue') && numel(results.pValue) >= i
+        fprintf('  p-value = %.3g\n', results.pValue(i));
+    end
+end
+
+if isfield(results, 'idxAfferaBaseline') && ~isempty(results.idxAfferaBaseline)
+    i = results.idxAfferaBaseline;
+    fprintf('\nEffect modification by baseline operator efficiency (Affera × baseline_speed):\n');
+    fprintf('  Additional percent change per unit higher baseline speed = %.1f%% [%.1f, %.1f]%%\n', ...
+        results.pct_est(i), results.pct_lo(i), results.pct_hi(i));
+    if isfield(results, 'pValue') && numel(results.pValue) >= i
+        fprintf('  p-value = %.3g\n', results.pValue(i));
+    end
+end
+
 fprintf('\nModel fit summary (AIC/BIC): AIC = %.1f, BIC = %.1f\n', ...
     lme.ModelCriterion.AIC, lme.ModelCriterion.BIC);
 

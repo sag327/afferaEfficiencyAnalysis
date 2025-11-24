@@ -1,0 +1,81 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{lscape}
+
+\begin{document}
+
+\section*{Statistical Methods}
+
+We performed a retrospective observational analysis of atrial fibrillation (AF) ablation procedures to evaluate the independent effect of the Affera pulsed-field ablation (PFA) system on total procedure duration, to quantify any Affera-specific learning curve, and to assess whether baseline operator efficiency modifies the Affera effect. The analytic cohort used a prespecified baseline window of 180 days prior to Affera adoption (baselineDays = 180). Operators were included if they contributed at least 15 AF ablations in both the baseline and Affera eras (min\_cases\_per\_group = 15). 
+
+The final dataset consisted of three case categories: (1) pre-Affera non-PFA ablations performed during the baseline window, (2) Affera PFA ablations after adoption, and (3) post-Affera non-PFA ablations performed after Affera introduction. This design allowed separation of Affera adoption effects from secular time trends.
+
+Procedure duration (minutes) was modeled using a linear mixed-effects model with the natural logarithm of duration as the dependent variable. Fixed effects included: Affera use (PFA vs.\ non-PFA), procedural complexity (PVI-only vs.\ PVI-plus additional ablation [PVI+]), calendar time in days since the first included case, an Affera-by-complexity interaction to assess whether Affera’s effect differed between PVI and PVI+ cases, a centered Affera case index to quantify Affera-specific learning with increasing operator experience, and an operator-level baseline efficiency term (centered mean log-duration of baseline non-PFA cases) with an Affera-by-baseline-efficiency interaction to test whether baseline operator speed modifies the Affera benefit. Random intercepts were included for operators to account for between-operator differences in baseline duration. Effects are reported as exponentiated percent changes, 95\% confidence intervals (CIs), and two-sided p-values.
+
+Because Affera case index and calendar time may correlate, we conducted prespecified collinearity diagnostics including Pearson correlations among fixed-effect predictors and variance inflation factors (VIFs). Correlations $|r|>0.7$ generated a diagnostic warning, while VIF values were interpreted using standard thresholds (moderate concern for VIF$>5$, serious concern for VIF$>10$).
+
+\section*{Results}
+
+A total of 1,752 AF ablation procedures performed by 11 operators met inclusion criteria, including 513 pre-Affera non-PFA cases, 1,014 Affera cases, and 225 post-Affera non-PFA cases. Of these, 617 procedures were PVI-only and 1,135 were PVI+. Unadjusted procedure durations by era and complexity are summarized in Table~\ref{tab:durations}.
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Group} & \textbf{n} & \textbf{Mean (min)} & \textbf{Median (min)} \\
+\midrule
+Pre-Affera non-PFA (all)   & 513  & 97.5 & 92.0 \\
+Pre-Affera non-PFA (PVI)   & 180  & 84.5 & 80.0 \\
+Pre-Affera non-PFA (PVI+)  & 333  & 104.5 & 98.0 \\
+Post-Affera non-PFA (all)  & 225  & 87.5 & 84.0 \\
+Post-Affera non-PFA (PVI)  & 76   & 71.9 & 74.0 \\
+Post-Affera non-PFA (PVI+) & 149  & 95.3 & 88.0 \\
+Affera (all)               & 1,014 & 74.2 & 69.0 \\
+Affera (PVI)               & 361  & 65.6 & 62.0 \\
+Affera (PVI+)              & 653  & 78.9 & 73.0 \\
+\bottomrule
+\end{tabular}
+\caption{Unadjusted procedure durations for baseline, post-Affera non-PFA, and Affera cases.}
+\label{tab:durations}
+\end{table}
+
+\clearpage
+\begin{landscape}
+\begin{table}[h!]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Effect} & \textbf{Percent Change} & \textbf{95\% CI (percent)} & \textbf{p-value} \\
+\midrule
+Affera use (PVI-only) & --12.2\% & [--17.8\%, --6.2\%] & 0.000116 \\
+Additional Affera effect in PVI+ & --6.1\% & [--11.9\%, 0.1\%] & 0.0524 \\
+PVI+ vs.\ PVI (baseline difference) & +31.8\% & [+25.3\%, +38.5\%] & $1.46\times10^{-26}$ \\
+Calendar time (per day) & --0.0\% & [--0.1\%, --0.0\%] & $5.73\times10^{-6}$ \\
+Affera learning (per Affera case) & --0.11\% & [--0.18\%, --0.04\%] & 0.00127 \\
+Baseline operator efficiency (per SD) & +127.5\% & [+78.1\%, +190.7\%] & $6.0\times10^{-11}$ \\
+Affera $\times$ baseline operator efficiency & --15.3\% & [--29.6\%, 2.0\%] & 0.0793 \\
+\bottomrule
+\end{tabular}
+\caption{Mixed-effects model estimates for procedure duration. Affera effects are referenced to non-PFA PVI-only procedures; the additional PVI+ effect represents the Affera-by-complexity interaction. Baseline operator efficiency is defined as the operator’s mean baseline (pre-Affera non-PFA) log-duration, centered across operators; the Affera-by-baseline interaction tests whether the Affera effect varies with baseline operator speed.}
+\label{tab:mixedmodel}
+\end{table}
+\end{landscape}
+
+In adjusted analyses (Table~\ref{tab:mixedmodel}), Affera use was associated with a 12.2\% reduction in PVI-only procedure duration compared with non-PFA PVI-only cases (95\% CI: 6.2\% to 17.8\%; p=0.000116). The Affera benefit for complex PVI+ procedures showed an additional 6.1\% reduction beyond the PVI effect (95\% CI: 0.1\% increase to 11.9\% reduction; p=0.0524), yielding an overall estimated reduction of approximately 17.7\% for PVI+ cases. Procedural complexity independently increased duration: PVI+ procedures were 31.8\% longer than PVI-only cases (p=$1.46\times10^{-26}$).
+
+Across all AF ablations (combining PVI-only and PVI+ procedures in their observed proportions), the Affera system was associated with an estimated 15.7\% reduction in total procedure duration (95\% CI: 11.2\% to 20.0\% reduction; p=$1.36\times10^{-10}$). This overall effect was derived from the mixed-effects model by weighting the Affera effect in PVI-only cases and the larger Affera effect in PVI+ cases according to their distribution in the dataset (36\% PVI-only, 64\% PVI+). The resulting estimate provides a single summary measure of the procedural efficiency benefit attributable to Affera across the full spectrum of AF ablation complexity.
+
+The Affera learning-curve term was statistically significant but modest, corresponding to a 0.11\% reduction in duration per additional Affera case (95\% CI: 0.04\% to 0.18\%; p=0.00127). This translates to an approximate 2.1\% reduction between an operator’s first and twentieth Affera cases. After accounting for Affera adoption, Affera-specific learning, and baseline operator efficiency, the residual secular time trend in duration remained very small in magnitude (approximately 0.0\% per day) despite statistical detectability (p=$5.73\times10^{-6}$), suggesting minimal clinically meaningful improvement over calendar time beyond Affera and learning effects.
+
+Baseline operator efficiency in the non-PFA era was strongly associated with procedure duration in the combined model: each unit higher centered baseline speed (i.e., higher mean baseline log-duration) corresponded to a 127.5\% longer procedure duration (95\% CI: 78.1\% to 190.7\%; p=$6.0\times10^{-11}$). The Affera-by-baseline-efficiency interaction term suggested that operators with slower baseline performance tended to experience larger Affera-related duration reductions (an additional 15.3\% reduction per unit higher baseline speed), although this effect did not reach conventional statistical significance (95\% CI: 2.0\% increase to 29.6\% reduction; p=0.0793).
+
+Collinearity diagnostics identified high correlation between Affera use and calendar time ($r=0.74$), reflecting adoption timing. However, VIF values remained low (2.62 for Affera use; 2.92 for calendar time; 1.33 for Affera index; 1.02 for baseline operator efficiency), indicating no meaningful multicollinearity and stable estimation of fixed effects.
+
+\section*{Conclusions}
+
+In a mixed-effects framework that incorporated Affera-specific learning, operator baseline efficiency, and post-Affera non-PFA cases to identify temporal trends, Affera PFA was associated with clinically meaningful reductions in AF ablation duration. PVI-only procedures were approximately 12\% faster with Affera, and complex PVI+ procedures were approximately 18\% faster, yielding an overall 16\% reduction across all AF ablations in their observed case mix. The Affera learning curve was statistically present but small (about a 2\% improvement over the first 20 Affera cases). Baseline operator efficiency was a strong determinant of procedure duration, and there was a trend toward greater Affera benefit among slower baseline operators, although this effect did not reach conventional significance. After modeling adoption, learning, and operator baseline efficiency, no clinically relevant secular improvement over calendar time remained, supporting the interpretation that Affera use was the primary driver of observed efficiency gains.
+
+\end{document}
+

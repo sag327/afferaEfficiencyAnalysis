@@ -467,4 +467,279 @@ The model formula and interpretation in Sections 4–5 remain unchanged, but the
 
 ---
 
+## 10. Affera Learning-Curve Extension (Implemented)
+
+### 10.1 Rationale
+
+The primary Q1 mixed-effects model estimates the **average** effect of Affera compared with non-PFA ablation, but it does not distinguish:
+
+- the **instantaneous** effect of adopting Affera (first few cases vs RF/cryo), from
+- the **experience-related** improvement as operators gain proficiency with Affera.
+
+Without explicitly modeling learning, early and late Affera cases are treated as exchangeable. This can obscure meaningful within-operator improvements and potentially bias the average Affera effect (up or down).
+
+To address this, the analysis incorporates an **Affera case index**, `affera_index`, representing the sequence number of Affera cases performed by each operator (1, 2, 3, …). This allows:
+
+- estimation of a **learning curve slope** (change in duration with Affera experience), and
+- separation of “technology effect” from “learning effect.”
+
+### 10.2 Model extension
+
+Starting from the core Q1 model, the learning-curve extension adds a single fixed-effect term for a centered Affera case index:
+
+- Construct per-operator Affera index:
+
+  - For each operator_id, sort that operator’s Affera cases by `procedure_date` (and `procedure_id` as tiebreaker if needed).
+  - Assign `affera_index = 1, 2, 3, …` for those Affera rows.
+  - Non-Affera rows are given `affera_index = 0`.
+
+- Center the Affera index across all Affera cases:
+
+  ```matlab
+  isA = tbl_q1.isAffera == 1;
+  mean_idx = mean(tbl_q1.affera_index(isA), 'omitnan');
+  tbl_q1.affera_index_ctr(isA) = tbl_q1.affera_index(isA) - mean_idx;
+  tbl_q1.affera_index_ctr(~isA) = 0;
+  ```
+
+- Extended model (implemented when `EnableLearningCurve` is true):
+
+  \[
+  \log(\text{duration}) =
+  \beta_0 +
+  \beta_1(\text{Affera}) +
+  \beta_2(\text{PVI+}) +
+  \beta_3(\text{time}) +
+  \beta_4(\text{Affera} \times \text{PVI+}) +
+  \beta_5(\text{Affera index, centered}) +
+  (1|\text{operator}).
+  \]
+
+  In MATLAB syntax this corresponds to
+
+  ```matlab
+  'log_duration ~ isAffera * isPVIplus + time_days + affera_index_ctr + (1|operator_id)'
+  ```
+
+  (Random intercept only; any random slopes are considered future extensions.)
+
+### 10.3 Collinearity diagnostics
+
+Because Affera experience tends to increase with calendar time, there is a risk that `affera_index_ctr` is collinear with `time_days` and/or `isAffera`. To monitor this, the implementation includes diagnostics (via `compute_learning_curve_diagnostics.m`) whenever the learning term is enabled:
+
+- Predictors checked:
+
+  ```matlab
+  predictors = {'isAffera', 'isPVIplus', 'time_days', 'affera_index_ctr'};
+  ```
+
+- Diagnostics:
+  - Correlation matrix (Pearson), with warnings if any |r| > 0.7.
+  - Simple variance inflation factors (VIF) for each predictor, with warnings for VIF > 5 and VIF > 10.
+
+These diagnostics are printed to the console but do not change the fitted model.
+
+### 10.4 Outputs and interpretation
+
+When `EnableLearningCurve` is enabled, the summary output and `results` struct additionally report:
+
+- **Learning curve slope**:
+  - Percent change in duration per additional Affera case:
+
+    ```matlab
+    pct_est_learning = results.pct_est(idxAfferaIndex);
+    ```
+
+  - 95% CI and p-value on the percent scale.
+
+- **Practical contrast**:
+  - Approximate percent change in duration from Affera case #1 to case #20, using:
+
+    ```matlab
+    deltaCases = 19;
+    pct_delta = (exp(beta_learning * deltaCases) - 1) * 100;
+    ```
+
+- All Affera, PVI vs PVI+, and overall Affera effects remain defined and reported as in the core model, but now conditional on the mean centered Affera index.
+
+Internally, the learning term is estimated on the log-duration scale; the console summary reports only percent changes and their CIs/p-values, while the log-scale coefficient and covariance are retained in `lme` and `results`.
+
+---
+
+## 11. Operator Baseline Efficiency Effect (Planned Extension)
+
+### 11.1 Motivation
+
+The current models estimate:
+
+- an average Affera effect vs non-PFA,
+- how that effect differs between PVI-only and PVI+, and
+- how Affera experience (learning curve) influences procedure duration.
+
+However, they do not yet address whether an **operator’s baseline efficiency** (on non-PFA cases) predicts the **magnitude of the Affera efficiency benefit**. Clinically, one might expect:
+
+- Slower baseline operators (longer non-PFA durations) could see larger relative improvements with Affera.
+- Faster baseline operators might see smaller incremental benefit.
+
+To evaluate this, we plan to introduce an interaction term between Affera use and a continuous **baseline operator speed** metric.
+
+### 11.2 Baseline operator speed definition
+
+For each operator, we will derive a baseline efficiency measure using that operator’s **non-PFA baseline cases** (pre-Affera, within the defined baseline window):
+
+- Candidate definition:
+  - Mean log-duration of baseline non-PFA cases:
+
+    ```matlab
+    % Conceptual only; implementation TBD
+    baseline_log_dur_op = mean(log(duration_minutes_baseline_op));
+    ```
+
+  - Or, equivalently, mean baseline duration (possibly log-transformed and standardized).
+
+- This baseline speed will then be:
+  - Attached to each procedure for that operator as an operator-level covariate, e.g. `baseline_speed_op`.
+  - Centered across operators (and potentially scaled) to reduce collinearity and aid interpretation.
+
+### 11.3 Planned model extension
+
+Starting from the Q1 (and optionally learning-curve) model, we plan to add:
+
+- A main effect for baseline operator speed.
+- An interaction between Affera use and baseline speed.
+
+Conceptual model:
+
+\[
+\log(\text{duration}) =
+\beta_0 +
+\beta_1(\text{Affera}) +
+\beta_2(\text{PVI+}) +
+\beta_3(\text{time}) +
+\beta_4(\text{Affera} \times \text{PVI+}) +
+\beta_5(\text{baseline speed}) +
+\beta_6(\text{Affera} \times \text{baseline speed}) +
+(1|\text{operator}) \quad [+ \; \beta_7(\text{Affera index}) \text{ if learning curve enabled}].
+\]
+
+In MATLAB formula notation this would look like:
+
+```matlab
+'log_duration ~ isAffera * isPVIplus + time_days + baseline_speed + isAffera:baseline_speed + ... + (1|operator_id)'
+```
+
+where `baseline_speed` is an operator-level covariate derived from non-PFA baseline cases, and the `...` indicates optional inclusion of `affera_index_ctr` when the learning-curve term is enabled.
+
+### 11.4 Interpretation of the operator-speed interaction
+
+- The **baseline_speed** main effect captures cross-operator differences in duration in the non-PFA era (faster vs slower operators).
+- The key interaction term **Affera × baseline_speed** tests whether the Affera effect depends on an operator’s baseline efficiency:
+  - A negative interaction coefficient (on the log scale) implies that **slower baseline operators** (higher baseline duration) experience **larger relative reductions in duration** when using Affera.
+  - A positive interaction implies the opposite.
+
+Reported quantities (once implemented) will follow the same percent-scale convention as the core model:
+
+- Percent change in duration per 1-unit (or 1–SD) increase in baseline speed.
+- Difference in Affera percent effect comparing “slow” vs “fast” operators (e.g., between the 25th and 75th percentiles of baseline speed).
+
+### 11.5 Collinearity and reporting
+
+Because baseline speed is derived solely from **pre-Affera non-PFA** cases, it should be less correlated with `isAffera` and `time_days` than naive measures that mix eras. Nevertheless, once implemented:
+
+- `baseline_speed` will be included in the same correlation/VIF diagnostics as the existing predictors.
+- Console output will report:
+  - Percent-scale effects and CIs for baseline speed and its interaction with Affera.
+  - No log-scale coefficients in the user-facing summary.
+
+As with all other fixed effects, the underlying log-scale estimates and covariance for the operator-speed terms will be preserved in `lme` and `results` for potential technical appendix use.
+
+---
+
+## 12. Operator Variability Metrics (Planned Extensions)
+
+The core and extended models focus on estimating **mean effects** (e.g., average Affera benefit, learning curves, operator baseline efficiency interactions). For publication, it may also be useful to quantify how **operator-to-operator variability** in procedure duration changes between the **baseline non-PFA era** and the **Affera era**.
+
+Two complementary, model-based metrics are planned for this purpose:
+
+### 12.1 Variance Ratio (Model-Based, “Gold Standard”)
+
+**Purpose**  
+Measure how much the **true operator-level variability**, after adjusting for covariates and case mix, changes when switching from baseline RF/non-PFA to Affera.
+
+**Method (conceptual)**  
+
+1. Fit two separate mixed-effects models (using the same fixed-effects structure as the primary model, minus predictors that are constant within the subset):
+   - **Baseline-only model**: restricted to non-PFA cases in the pre-Affera baseline window.
+   - **Affera-only model**: restricted to Affera cases.
+2. For each model, extract the **operator random-intercept variance**:
+   - `σ²_baseline` from the baseline-only model.
+   - `σ²_affera` from the Affera-only model.
+3. Compute the **percent reduction in operator-level variance** when moving to Affera:
+
+   \[
+   Z = 100 \times \left(1 - \frac{\sigma^2_{\text{Affera}}}{\sigma^2_{\text{baseline}}}\right).
+   \]
+
+4. Report (on the log-duration scale):
+   - `σ²_baseline`
+   - `σ²_affera`
+   - `Z` (percent reduction in operator variance)
+
+**Interpretation**  
+
+- `σ²` reflects **adjusted between-operator variability** in log-duration, after accounting for:
+  - PVI vs PVI+,
+  - time trends,
+  - learning-curve effects (if included),
+  - baseline operator efficiency (if included),
+  - and other fixed effects.
+- A reduction in `σ²` from baseline to Affera indicates that **operator-to-operator differences in efficiency are narrower** in the Affera era.
+- This is the most statistically rigorous measure of how operator variability changes with Affera.
+
+### 12.2 IQR of Operator Random Effects (Adjusted, Reader-Friendly)
+
+**Purpose**  
+Provide an intuitive, clinician-friendly measure of variability that answers:  
+“How wide is the spread of adjusted operator performance before vs after Affera?”
+
+**Method (conceptual)**  
+
+Using the same baseline-only and Affera-only models as above:
+
+1. Extract operator-specific random intercept BLUPs (Best Linear Unbiased Predictions) from each model.
+2. Compute:
+   - `IQR_baseline` = interquartile range of operator random intercepts in the baseline-only model.
+   - `IQR_affera`   = interquartile range of operator random intercepts in the Affera-only model.
+3. Optionally transform to a multiplicative scale (because the model is on log-duration):
+   - `exp(random_intercept)` to interpret differences as multiplicative changes in duration.
+
+**Interpretation**  
+
+- The IQR represents the width of the “middle 50%” of operator effects:
+  - A narrower IQR in the Affera era suggests **reduced operator variability**.
+  - This complements the variance ratio by providing a directly interpretable spread measure.
+- Clinicians often find IQR easier to understand than variance, so this is well-suited to figures or narrative descriptions.
+
+### 12.3 Recommended Reporting (Once Implemented)
+
+When these metrics are implemented, a typical reporting format might be:
+
+1. **Variance ratio**
+   - “Operator-level variance decreased from σ² = X (baseline) to σ² = Y (Affera), a Z% reduction.”
+2. **Operator IQR**
+   - “The interquartile range of adjusted operator effects narrowed from A to B.”
+
+Both metrics should be computed and reported on the **log-duration scale**, with optional translation to multiplicative differences (e.g., ratios of median durations) for readability.
+
+### 12.4 Relationship to Existing Extensions
+
+These variability metrics are **add-on summaries** that will reuse the same modeling framework (core Q1 model, learning-curve extension, operator baseline efficiency extension) but:
+
+- Fit **stratified models** by era (baseline-only vs Affera-only), and
+- Focus on the **random-effects variance and distribution** of operator random intercepts rather than on mean fixed effects.
+
+They are planned as future work and do not change any of the core or extended model structures described in Sections 4, 10, and 11.
+
+---
+
 # END OF SPECIFICATION
