@@ -655,4 +655,91 @@ As with all other fixed effects, the underlying log-scale estimates and covarian
 
 ---
 
+## 12. Operator Variability Metrics (Planned Extensions)
+
+The core and extended models focus on estimating **mean effects** (e.g., average Affera benefit, learning curves, operator baseline efficiency interactions). For publication, it may also be useful to quantify how **operator-to-operator variability** in procedure duration changes between the **baseline non-PFA era** and the **Affera era**.
+
+Two complementary, model-based metrics are planned for this purpose:
+
+### 12.1 Variance Ratio (Model-Based, “Gold Standard”)
+
+**Purpose**  
+Measure how much the **true operator-level variability**, after adjusting for covariates and case mix, changes when switching from baseline RF/non-PFA to Affera.
+
+**Method (conceptual)**  
+
+1. Fit two separate mixed-effects models (using the same fixed-effects structure as the primary model, minus predictors that are constant within the subset):
+   - **Baseline-only model**: restricted to non-PFA cases in the pre-Affera baseline window.
+   - **Affera-only model**: restricted to Affera cases.
+2. For each model, extract the **operator random-intercept variance**:
+   - `σ²_baseline` from the baseline-only model.
+   - `σ²_affera` from the Affera-only model.
+3. Compute the **percent reduction in operator-level variance** when moving to Affera:
+
+   \[
+   Z = 100 \times \left(1 - \frac{\sigma^2_{\text{Affera}}}{\sigma^2_{\text{baseline}}}\right).
+   \]
+
+4. Report (on the log-duration scale):
+   - `σ²_baseline`
+   - `σ²_affera`
+   - `Z` (percent reduction in operator variance)
+
+**Interpretation**  
+
+- `σ²` reflects **adjusted between-operator variability** in log-duration, after accounting for:
+  - PVI vs PVI+,
+  - time trends,
+  - learning-curve effects (if included),
+  - baseline operator efficiency (if included),
+  - and other fixed effects.
+- A reduction in `σ²` from baseline to Affera indicates that **operator-to-operator differences in efficiency are narrower** in the Affera era.
+- This is the most statistically rigorous measure of how operator variability changes with Affera.
+
+### 12.2 IQR of Operator Random Effects (Adjusted, Reader-Friendly)
+
+**Purpose**  
+Provide an intuitive, clinician-friendly measure of variability that answers:  
+“How wide is the spread of adjusted operator performance before vs after Affera?”
+
+**Method (conceptual)**  
+
+Using the same baseline-only and Affera-only models as above:
+
+1. Extract operator-specific random intercept BLUPs (Best Linear Unbiased Predictions) from each model.
+2. Compute:
+   - `IQR_baseline` = interquartile range of operator random intercepts in the baseline-only model.
+   - `IQR_affera`   = interquartile range of operator random intercepts in the Affera-only model.
+3. Optionally transform to a multiplicative scale (because the model is on log-duration):
+   - `exp(random_intercept)` to interpret differences as multiplicative changes in duration.
+
+**Interpretation**  
+
+- The IQR represents the width of the “middle 50%” of operator effects:
+  - A narrower IQR in the Affera era suggests **reduced operator variability**.
+  - This complements the variance ratio by providing a directly interpretable spread measure.
+- Clinicians often find IQR easier to understand than variance, so this is well-suited to figures or narrative descriptions.
+
+### 12.3 Recommended Reporting (Once Implemented)
+
+When these metrics are implemented, a typical reporting format might be:
+
+1. **Variance ratio**
+   - “Operator-level variance decreased from σ² = X (baseline) to σ² = Y (Affera), a Z% reduction.”
+2. **Operator IQR**
+   - “The interquartile range of adjusted operator effects narrowed from A to B.”
+
+Both metrics should be computed and reported on the **log-duration scale**, with optional translation to multiplicative differences (e.g., ratios of median durations) for readability.
+
+### 12.4 Relationship to Existing Extensions
+
+These variability metrics are **add-on summaries** that will reuse the same modeling framework (core Q1 model, learning-curve extension, operator baseline efficiency extension) but:
+
+- Fit **stratified models** by era (baseline-only vs Affera-only), and
+- Focus on the **random-effects variance and distribution** of operator random intercepts rather than on mean fixed effects.
+
+They are planned as future work and do not change any of the core or extended model structures described in Sections 4, 10, and 11.
+
+---
+
 # END OF SPECIFICATION
