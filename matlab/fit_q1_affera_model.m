@@ -50,6 +50,8 @@ if opts.EnableOperatorEffect
     fixedFormula = [fixedFormula, ' + isAffera:baseline_speed_ctr'];
 end
 
+fprintf('final fixed formula for lme: %s', fixedFormula);
+
 lme = fitlme(tbl_q1, sprintf('%s + (1|operator_id)', fixedFormula));
 
 beta  = fixedEffects(lme);
@@ -157,11 +159,14 @@ end
 baselineMask   = logical(tbl_q1.isBaselineEra);
 afferaMask     = tbl_q1.isAffera ~= 0;
 isPVIplus      = logical(tbl_q1.isPVIplus);
+hasComparisonMask = ismember('isComparisonEra', tbl_q1.Properties.VariableNames);
 hasPostNonPFAMask = ismember('isPostNonPFAEra', tbl_q1.Properties.VariableNames);
-if hasPostNonPFAMask
-    postNonPFAMask = logical(tbl_q1.isPostNonPFAEra);
+if hasComparisonMask
+    comparisonMask = logical(tbl_q1.isComparisonEra);
+elseif hasPostNonPFAMask
+    comparisonMask = logical(tbl_q1.isPostNonPFAEra);
 else
-    postNonPFAMask = false(size(baselineMask));
+    comparisonMask = false(size(baselineMask));
 end
 
 statsFn = @(m) struct( ...
@@ -201,12 +206,12 @@ affera_stats.overall  = statsFn(afferaMask);
 affera_stats.pvi      = statsFn(afferaMask & ~isPVIplus);
 affera_stats.pvi_plus = statsFn(afferaMask &  isPVIplus);
 
-post_non_pfa_stats = struct();
-if hasPostNonPFAMask
-    post_non_pfa_stats.overall  = statsFn(postNonPFAMask);
-    post_non_pfa_stats.pvi      = statsFn(postNonPFAMask & ~isPVIplus);
-    post_non_pfa_stats.pvi_plus = statsFn(postNonPFAMask &  isPVIplus);
-    % Catheter breakdown for post-Affera non-PFA cases.
+comparison_stats = struct();
+if any(comparisonMask)
+    comparison_stats.overall  = statsFn(comparisonMask);
+    comparison_stats.pvi      = statsFn(comparisonMask & ~isPVIplus);
+    comparison_stats.pvi_plus = statsFn(comparisonMask &  isPVIplus);
+    % Catheter breakdown for post-Affera comparison-group cases.
     if ismember('catheter_primary', tbl_q1.Properties.VariableNames)
         cats = categories(tbl_q1.catheter_primary);
         nCats = numel(cats);
@@ -216,26 +221,28 @@ if hasPostNonPFAMask
         medVec   = nan(nCats, 1);
         for k = 1:nCats
             cat = cats{k};
-            mask = postNonPFAMask & (tbl_q1.catheter_primary == cat);
+            mask = comparisonMask & (tbl_q1.catheter_primary == cat);
             catNames(k) = string(cat);
             nVec(k)     = sum(mask);
             meanVec(k)  = mean(duration(mask), 'omitnan');
             medVec(k)   = median(duration(mask), 'omitnan');
         end
-        post_non_pfa_stats.by_catheter = table(catNames, nVec, meanVec, medVec, ...
+        comparison_stats.by_catheter = table(catNames, nVec, meanVec, medVec, ...
             'VariableNames', {'catheter_primary', 'n', 'mean_duration', 'median_duration'});
     else
-        post_non_pfa_stats.by_catheter = table();
+        comparison_stats.by_catheter = table();
     end
 else
-    post_non_pfa_stats.overall  = statsFn(false(size(baselineMask)));
-    post_non_pfa_stats.pvi      = post_non_pfa_stats.overall;
-    post_non_pfa_stats.pvi_plus = post_non_pfa_stats.overall;
-    post_non_pfa_stats.by_catheter = table();
+    comparison_stats.overall  = statsFn(false(size(baselineMask)));
+    comparison_stats.pvi      = comparison_stats.overall;
+    comparison_stats.pvi_plus = comparison_stats.overall;
+    comparison_stats.by_catheter = table();
 end
 
 results.baseline_stats = baseline_stats;
 results.affera_stats   = affera_stats;
-results.post_non_pfa_stats = post_non_pfa_stats;
+results.comparison_stats = comparison_stats;
+% Backward-compatible field name (legacy non-PFA naming).
+results.post_non_pfa_stats = comparison_stats;
 
 end

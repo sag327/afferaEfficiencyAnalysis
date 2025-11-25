@@ -165,6 +165,12 @@ for kk = 1:numel(keywords)
 end
 tbl.is_pfa_catheter = is_pfa_catheter;
 
+% RF catheter indicator (used for comparison-group selection).
+is_rf_catheter = false(height(tbl), 1);
+is_rf_catheter = is_rf_catheter | strcmpi(tbl.catheter_primary, "OTHER CATHETERS (RF)");
+is_rf_catheter = is_rf_catheter | contains(lowSup, 'other catheters (rf)');
+tbl.is_rf_catheter = is_rf_catheter;
+
 toolType = repmat("other", height(tbl), 1);
 toolType(tbl.is_affera) = "affera";
 tbl.tool_type = categorical(toolType);
@@ -197,11 +203,13 @@ operator_case_counts = table;
 operator_case_counts.operator_id = categorical(ops);
 operator_case_counts.n_affera_cases = zeros(numOps, 1);
 operator_case_counts.n_non_affera_cases = zeros(numOps, 1);
+operator_case_counts.n_rf_cases = zeros(numOps, 1);
 for k = 1:numOps
     op = ops{k};
     idx = (tbl.operator_id == op);
     operator_case_counts.n_affera_cases(k) = sum(idx & tbl.is_affera);
     operator_case_counts.n_non_affera_cases(k) = sum(idx & ~tbl.is_affera);
+    operator_case_counts.n_rf_cases(k) = sum(idx & tbl.is_rf_catheter);
 end
 
 fprintf('\nOperator case counts (Affera vs non-Affera):\n');

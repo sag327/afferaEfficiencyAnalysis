@@ -1,14 +1,19 @@
-function [tbl_q1, operator_counts_all] = make_q1_affera_dataset(tbl, meta, baseline_days, min_cases_per_group)
+function [tbl_q1, operator_counts_all] = make_q1_affera_dataset(tbl, meta, baseline_days, min_cases_per_group, comparisonGroup)
 % MAKE_Q1_AFFERA_DATASET  Build analysis-ready table for Q1 Affera model.
 %
 %   tbl_q1 = make_q1_affera_dataset(tbl, meta) uses the imported procedure-
 %   level table and metadata from import_clinical_data to construct the
 %   subset and variables required by the Q1 mixed-effects model
-%   specification (Affera vs non-Affera efficiency analysis).
+%   specification (Affera vs selected comparison group).
 %
 %   tbl_q1 = make_q1_affera_dataset(tbl, meta, baseline_days) allows
 %   overriding the default baseline window length (in days) before the
 %   first Affera case (default: 180).
+%
+%   tbl_q1 = make_q1_affera_dataset(tbl, meta, baseline_days, min_cases_per_group, comparisonGroup)
+%   also allows setting:
+%     - min_cases_per_group: minimum baseline and Affera cases per operator (default 15)
+%     - comparisonGroup: 'nonPFA' (default) or 'RF' to control the comparison cohort.
 
 if nargin < 3 || isempty(baseline_days)
     baseline_days = 180;
@@ -16,6 +21,10 @@ end
 
 if nargin < 4 || isempty(min_cases_per_group)
     min_cases_per_group = 15;
+end
+
+if nargin < 5 || isempty(comparisonGroup)
+    comparisonGroup = "nonPFA";
 end
 
 if ~isfield(meta, 'affera_launch_date_global') || isempty(meta.affera_launch_date_global)
@@ -33,30 +42,27 @@ if ~ismember('is_affera', tbl.Properties.VariableNames)
     error('make_q1_affera_dataset:MissingVariable', ...
         'Table is missing required variable ''is_affera''.');
 end
-if ~ismember('is_pfa_catheter', tbl.Properties.VariableNames)
-    error('make_q1_affera_dataset:MissingVariable', ...
-        'Table is missing required variable ''is_pfa_catheter''.');
-end
 
 isAffera_raw = tbl.is_affera;
 
-isBaseline = ~tbl.is_pfa_catheter & ...
-             ~isAffera_raw & ...
+% Centralized comparison-group mask (nonPFA or RF).
+compMask = get_q1_comparison_group_mask(tbl, comparisonGroup);
+
+isBaseline = compMask & ...
              tbl.procedure_date >= baseline_start & ...
              tbl.procedure_date <  baseline_end;
 
-% v2: non-PFA post-Affera cases (used to improve identifiability of time trend).
-isPostNonPFA = ~tbl.is_pfa_catheter & ...
-               ~isAffera_raw & ...
-               tbl.procedure_date >= Affera_start;
+% Post-Affera comparison-group cases (used to improve identifiability of time trend).
+isPostComparison = compMask & ...
+                   tbl.procedure_date >= Affera_start;
 
-include = isAffera_raw | isBaseline | isPostNonPFA;
+include = isAffera_raw | isBaseline | isPostComparison;
 
-% Work first on the full baseline+post-Affera-non-PFA+Affera set for
+% Work first on the full baseline+post-Affera comparison+Affera set for
 % operator summaries and mask construction.
 tbl_inc           = tbl(include, :);
 baselineMaskInc   = isBaseline(include);
-postNonPFAMaskInc = isPostNonPFA(include);
+postCompMaskInc   = isPostComparison(include);
 afferaMaskInc     = isAffera_raw(include);
 
 % Duration in minutes (spec name).
@@ -96,7 +102,9 @@ end
 
 % Optional baseline indicators for reporting (on full included set).
 tbl_inc.isBaselineEra   = baselineMaskInc;
-tbl_inc.isPostNonPFAEra = postNonPFAMaskInc;
+tbl_inc.isComparisonEra = postCompMaskInc;
+% Backward-compatible alias (legacy naming).
+tbl_inc.isPostNonPFAEra = postCompMaskInc;
 
 % Operator-level inclusion based on minimum baseline and Affera cases, and
 % construction of an operator summary table that includes all operators in
