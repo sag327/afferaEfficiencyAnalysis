@@ -19,7 +19,7 @@ function [lme, results, tbl_q1] = run_q1_affera_model(clinicalData, varargin)
 % Defaults.
 baseline_days = 180;
 min_cases_per_group = 15;
-opts = struct('enableLearningCurve', false);
+opts = struct('enableLearningCurve', false, 'comparisonGroup', "nonPFA");
 
 % Backward-compatible positional usage: (clinicalData, baseline_days, min_cases_per_group, opts)
 if ~isempty(varargin) && isnumeric(varargin{1})
@@ -44,12 +44,14 @@ p.addParameter('BaselineDays', baseline_days, @(x) isnumeric(x) && isscalar(x));
 p.addParameter('MinCasesPerGroup', min_cases_per_group, @(x) isnumeric(x) && isscalar(x));
 p.addParameter('EnableLearningCurve', opts.enableLearningCurve, @(x) islogical(x) || isnumeric(x));
 p.addParameter('EnableOperatorEffect', false, @(x) islogical(x) || isnumeric(x));
+p.addParameter('ComparisonGroup', opts.comparisonGroup, @(s) ischar(s) || isstring(s));
 p.parse(varargin{:});
 
 baseline_days = p.Results.BaselineDays;
 min_cases_per_group = p.Results.MinCasesPerGroup;
 opts.enableLearningCurve = logical(p.Results.EnableLearningCurve);
 opts.EnableOperatorEffect = logical(p.Results.EnableOperatorEffect);
+opts.comparisonGroup = string(p.Results.ComparisonGroup);
 opts.baseline_days = baseline_days;
 opts.min_cases_per_group = min_cases_per_group;
 
@@ -69,7 +71,7 @@ if ~any(afferaIdx)
 end
 meta.affera_launch_date_global = min(tbl.procedure_date(afferaIdx));
 
-[tbl_q1, operator_counts_all] = make_q1_affera_dataset(tbl, meta, baseline_days, min_cases_per_group);
+[tbl_q1, operator_counts_all] = make_q1_affera_dataset(tbl, meta, baseline_days, min_cases_per_group, opts.comparisonGroup);
 diagnostics = [];
 
 if opts.enableLearningCurve
@@ -91,8 +93,11 @@ end
 [lme, results] = fit_q1_affera_model(tbl_q1, opts);
 
 % Attach operator summary (all operators with included flag) and post-Affera
-% non-PFA case count.
+% comparison-group case count.
 results.operator_counts = operator_counts_all;
+if ismember('isComparisonEra', tbl_q1.Properties.VariableNames)
+    results.nPostComparison = sum(tbl_q1.isComparisonEra);
+end
 if ismember('isPostNonPFAEra', tbl_q1.Properties.VariableNames)
     results.nPostNonPFA = sum(tbl_q1.isPostNonPFAEra);
 end

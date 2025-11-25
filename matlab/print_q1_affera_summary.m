@@ -15,7 +15,7 @@ if nargin < 5
     diagnostics = [];
 end
 
-fprintf('\n=== Q1 Affera vs Non-Affera Mixed-Effects Model ===\n');
+fprintf('\n=== Q1 Affera vs Comparison-Group Mixed-Effects Model ===\n');
 
 % Report settings if available.
 if isfield(opts, 'baseline_days') || isfield(opts, 'min_cases_per_group') || isfield(opts, 'enableLearningCurve')
@@ -29,18 +29,37 @@ if isfield(opts, 'baseline_days') || isfield(opts, 'min_cases_per_group') || isf
     if isfield(opts, 'enableLearningCurve')
         fprintf('  Learning curve enabled: %s\n', string(opts.enableLearningCurve));
     end
+    if isfield(opts, 'comparisonGroup')
+        fprintf('  Comparison group: %s\n', string(opts.comparisonGroup));
+    end
 end
 
 % Sample and operator counts.
-nTotal        = height(tbl_q1);
-nBaseline     = sum(tbl_q1.isBaselineEra);
-nAffera       = sum(tbl_q1.isAffera ~= 0);
-hasPostNonPFA = ismember('isPostNonPFAEra', tbl_q1.Properties.VariableNames);
-if hasPostNonPFA
-    nPostNonPFA = sum(tbl_q1.isPostNonPFAEra);
+nTotal    = height(tbl_q1);
+nBaseline = sum(tbl_q1.isBaselineEra);
+nAffera   = sum(tbl_q1.isAffera ~= 0);
+
+% Comparison-group mask (non-PFA by default, RF when requested).
+hasComparisonEra = ismember('isComparisonEra', tbl_q1.Properties.VariableNames);
+hasPostNonPFA    = ismember('isPostNonPFAEra', tbl_q1.Properties.VariableNames);
+if hasComparisonEra
+    compMask = logical(tbl_q1.isComparisonEra);
+elseif hasPostNonPFA
+    compMask = logical(tbl_q1.isPostNonPFAEra);
 else
-    nPostNonPFA = NaN;
+    compMask = false(size(tbl_q1.isBaselineEra));
 end
+nPostComp = sum(compMask);
+compGroupStr = '';
+if isfield(opts, 'comparisonGroup')
+    compGroupStr = lower(string(opts.comparisonGroup));
+end
+if strcmp(compGroupStr, 'rf')
+    compLabel = 'RF';
+else
+    compLabel = 'non-PFA';
+end
+compLabelFull = sprintf('comparison group (%s)', compLabel);
 
 isPVIplus = logical(tbl_q1.isPVIplus);
 nPVI      = sum(~isPVIplus);
@@ -49,10 +68,10 @@ nPVIplus  = sum(isPVIplus);
 nOps = numel(categories(tbl_q1.operator_id));
 
 fprintf('Total procedures included: %d\n', nTotal);
-fprintf('  Baseline (non-PFA, pre-Affera): %d\n', nBaseline);
+fprintf('  Baseline (%s, pre-Affera): %d\n', compLabelFull, nBaseline);
 fprintf('  Affera cases: %d\n', nAffera);
-if hasPostNonPFA
-    fprintf('  Post-Affera non-PFA cases: %d\n', nPostNonPFA);
+if hasComparisonEra || hasPostNonPFA
+    fprintf('  Post-Affera %s cases: %d\n', compLabelFull, nPostComp);
 end
 fprintf('PVI-only cases: %d\n', nPVI);
 fprintf('PVI+ cases: %d\n', nPVIplus);
@@ -86,16 +105,19 @@ end
 % Descriptive duration summaries.
 bs  = results.baseline_stats;
 as  = results.affera_stats;
-hasPostStats = isfield(results, 'post_non_pfa_stats');
-if hasPostStats
+hasPostStats = false;
+pnp = [];
+if isfield(results, 'comparison_stats')
+    pnp = results.comparison_stats;
+    hasPostStats = true;
+elseif isfield(results, 'post_non_pfa_stats')
     pnp = results.post_non_pfa_stats;
-else
-    pnp = [];
+    hasPostStats = true;
 end
 
 % Case-mix counts by era and complexity.
 fprintf('\nCase mix by era and complexity (procedure counts):\n');
-fprintf('  Baseline (non-PFA, pre-Affera):\n');
+fprintf('  Baseline (%s, pre-Affera):\n', compLabelFull);
 fprintf('    Total: %d  |  PVI-only: %d  |  PVI+: %d\n', ...
     bs.overall.n, bs.pvi.n, bs.pvi_plus.n);
 
@@ -104,35 +126,31 @@ fprintf('    Total: %d  |  PVI-only: %d  |  PVI+: %d\n', ...
     as.overall.n, as.pvi.n, as.pvi_plus.n);
 
 if hasPostStats && pnp.overall.n > 0
-    fprintf('  Post-Affera non-PFA:\n');
+    fprintf('  Post-Affera %s:\n', compLabelFull);
     fprintf('    Total: %d  |  PVI-only: %d  |  PVI+: %d\n', ...
         pnp.overall.n, pnp.pvi.n, pnp.pvi_plus.n);
 end
 
-% Operator share of baseline and post-Affera non-PFA procedures.
-fprintf('\nOperator share of baseline and post-Affera non-PFA procedures:\n');
+% Operator share of baseline and post-Affera comparison-group procedures.
+fprintf('\nOperator share of baseline and post-Affera %s procedures:\n', compLabelFull);
 opsInModel = categories(tbl_q1.operator_id);
 for k = 1:numel(opsInModel)
     op = opsInModel{k};
     maskOp = (tbl_q1.operator_id == op);
     nBaseOp = sum(maskOp & tbl_q1.isBaselineEra);
-    if hasPostNonPFA
-        nPostNonPFAOp = sum(maskOp & tbl_q1.isPostNonPFAEra);
-    else
-        nPostNonPFAOp = 0;
-    end
+    nPostCompOp = sum(maskOp & compMask);
     pctBase = 100 * nBaseOp / max(nBaseline, 1);
-    pctPost = 100 * nPostNonPFAOp / max(nPostNonPFA, 1 + (nPostNonPFA == 0));
+    pctPost = 100 * nPostCompOp / max(nPostComp, 1 + (nPostComp == 0));
     fprintf('  %-20s Baseline: %3d (%.1f%% of baseline)', op, nBaseOp, pctBase);
-    if hasPostNonPFA && nPostNonPFA > 0
-        fprintf('  |  Post-Affera non-PFA: %3d (%.1f%% of post-Affera non-PFA)\n', ...
-            nPostNonPFAOp, pctPost);
+    if (hasComparisonEra || hasPostNonPFA) && nPostComp > 0
+        fprintf('  |  Post-Affera %s: %3d (%.1f%% of post-Affera %s)\n', ...
+            compLabelFull, nPostCompOp, pctPost, compLabelFull);
     else
-        fprintf('  |  Post-Affera non-PFA:    0 (n/a)\n');
+        fprintf('  |  Post-Affera %s:    0 (n/a)\n', compLabelFull);
     end
 end
 
-fprintf('\nBaseline duration (non-PFA, pre-Affera):\n');
+fprintf('\nBaseline duration (%s, pre-Affera):\n', compLabelFull);
 fprintf('  All baseline procedures: n = %d, mean = %.1f min, median = %.1f min\n', ...
     bs.overall.n, bs.overall.mean_duration, bs.overall.median_duration);
 fprintf('  Baseline PVI-only:       n = %d, mean = %.1f min, median = %.1f min\n', ...
@@ -151,16 +169,16 @@ if ~isempty(bs.by_catheter) && height(bs.by_catheter) > 0
 end
 
 if hasPostStats && pnp.overall.n > 0
-    fprintf('\nPost-Affera non-PFA duration:\n');
-    fprintf('  All post-Affera non-PFA procedures: n = %d, mean = %.1f min, median = %.1f min\n', ...
-        pnp.overall.n, pnp.overall.mean_duration, pnp.overall.median_duration);
-    fprintf('  Post-Affera non-PFA PVI-only:       n = %d, mean = %.1f min, median = %.1f min\n', ...
-        pnp.pvi.n, pnp.pvi.mean_duration, pnp.pvi.median_duration);
-    fprintf('  Post-Affera non-PFA PVI+:           n = %d, mean = %.1f min, median = %.1f min\n', ...
-        pnp.pvi_plus.n, pnp.pvi_plus.mean_duration, pnp.pvi_plus.median_duration);
+    fprintf('\nPost-Affera %s duration:\n', compLabelFull);
+    fprintf('  All post-Affera %s procedures: n = %d, mean = %.1f min, median = %.1f min\n', ...
+        compLabelFull, pnp.overall.n, pnp.overall.mean_duration, pnp.overall.median_duration);
+    fprintf('  Post-Affera %s PVI-only:       n = %d, mean = %.1f min, median = %.1f min\n', ...
+        compLabelFull, pnp.pvi.n, pnp.pvi.mean_duration, pnp.pvi.median_duration);
+    fprintf('  Post-Affera %s PVI+:           n = %d, mean = %.1f min, median = %.1f min\n', ...
+        compLabelFull, pnp.pvi_plus.n, pnp.pvi_plus.mean_duration, pnp.pvi_plus.median_duration);
 
     if ~isempty(pnp.by_catheter) && height(pnp.by_catheter) > 0
-        fprintf('\nPost-Affera non-PFA duration by catheter_primary:\n');
+        fprintf('\nPost-Affera %s duration by catheter_primary:\n', compLabelFull);
         fprintf('%-30s %6s %12s %12s\n', 'Catheter', 'n', 'Mean (min)', 'Median (min)');
         for i = 1:height(pnp.by_catheter)
             row = pnp.by_catheter(i, :);
