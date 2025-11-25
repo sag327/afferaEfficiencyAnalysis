@@ -116,22 +116,13 @@ operatorName(operatorName == "") = "UnknownOperator";
 procedureType = strtrim(string(rawTbl.("Slices by Codes")));
 procedureType(procedureType == "") = "UnknownCode";
 
-% Supplies (used to flag Affera)
+% Supplies (used to flag Affera/PFA/RF and detect undefined catheters).
 suppliesRaw = strtrim(string(rawTbl.("Slices by Supplies and Implants")));
 suppliesRaw(suppliesRaw == "") = "UnknownSupply";
 
-% Parse a primary catheter/device label from the supplies string.
-catheter_primary = repmat("UnknownCatheter", height(rawTbl), 1);
-delims = {',', ';', '|', newline};
-for ii = 1:height(rawTbl)
-    entry = suppliesRaw(ii);
-    tokens = split(entry, delims);
-    tokens = strtrim(tokens);
-    tokens(tokens == "") = [];
-    if ~isempty(tokens)
-        catheter_primary(ii) = upper(tokens(1));
-    end
-end
+% Map supplies to catheter labels and exposure flags (handles new and legacy formats).
+[catheter_primary, is_affera, is_pfa_catheter, is_rf_catheter, catheter_defined] = ...
+    parse_supplies_column(suppliesRaw);
 
 % Procedure duration in minutes
 durationRaw = rawTbl.("Procedure Start to Procedure Complete (Minutes)");
@@ -154,22 +145,17 @@ tbl.operator_id           = categorical(operatorName);
 tbl.procedure_type        = categorical(procedureType);
 tbl.supplies_raw          = suppliesRaw;
 tbl.catheter_primary      = categorical(catheter_primary);
-tbl.is_affera             = contains(lower(suppliesRaw), 'sphere-9 catheter');
+tbl.is_affera             = is_affera;
+tbl.is_pfa_catheter       = is_pfa_catheter;
+tbl.is_rf_catheter        = is_rf_catheter;
+tbl.catheter_defined      = catheter_defined;
+tbl.exclude_from_analysis = ~catheter_defined;
 
-% PFA catheter indicator (Sphere-9, Farawave, PulseSelect).
-is_pfa_catheter = false(height(tbl), 1);
-keywords = {'sphere-9', 'farawave', 'pulseselect'};
-lowSup = lower(tbl.supplies_raw);
-for kk = 1:numel(keywords)
-    is_pfa_catheter = is_pfa_catheter | contains(lowSup, keywords{kk});
+if any(~catheter_defined)
+    fprintf('Excluding %d procedures with undefined catheter (e.g., "None of the above").\n', ...
+        sum(~catheter_defined));
+    tbl = tbl(catheter_defined, :);
 end
-tbl.is_pfa_catheter = is_pfa_catheter;
-
-% RF catheter indicator (used for comparison-group selection).
-is_rf_catheter = false(height(tbl), 1);
-is_rf_catheter = is_rf_catheter | strcmpi(tbl.catheter_primary, "OTHER CATHETERS (RF)");
-is_rf_catheter = is_rf_catheter | contains(lowSup, 'other catheters (rf)');
-tbl.is_rf_catheter = is_rf_catheter;
 
 toolType = repmat("other", height(tbl), 1);
 toolType(tbl.is_affera) = "affera";
@@ -233,5 +219,71 @@ save(outFile, 'tbl', 'meta');
 
 fprintf('Saved %d procedures (%d operators, %d Affera cases) to %s\n', ...
     height(tbl), numel(categories(tbl.operator_id)), sum(tbl.is_affera), outFile);
+
+end
+
+% -------------------------------------------------------------------------
+function [catheter_primary, is_affera, is_pfa_catheter, is_rf_catheter, catheter_defined] = parse_supplies_column(suppliesRaw)
+% PARSE_SUPPLIES_COLUMN  Map supplies strings to catheter labels and flags.
+%
+% Handles both legacy and new coding:
+%   - New: 'Sphere-9', 'RF', 'PulseSelect', 'Farawave', 'Cryo', 'None of the above'
+%   - Legacy: 'Sphere-9 Catheter', 'Other catheters (RF)', 'PulseSelect', 'Farawave'
+
+delims = {',', ';', '|', newline};
+n = numel(suppliesRaw);
+catheter_primary   = repmat("UNKNOWN", n, 1);
+is_affera          = false(n, 1);
+is_pfa_catheter    = false(n, 1);
+is_rf_catheter     = false(n, 1);
+catheter_defined   = false(n, 1);
+
+for ii = 1:n
+    entry = string(suppliesRaw(ii));
+    lowEntry = lower(entry);
+
+    % Exclude undefined catheter rows.
+    if contains(lowEntry, 'none of the above')
+        catheter_primary(ii) = "UNKNOWN";
+        continue;
+    end
+
+    tokens = split(entry, delims);
+    tokens = strtrim(tokens);
+    tokens(tokens == "") = [];
+    tokensLow = lower(tokens);
+
+    recognized = false;
+
+    if any(contains(tokensLow, 'sphere-9'))
+        catheter_primary(ii) = "SPHERE-9";
+        is_affera(ii) = true;
+        is_pfa_catheter(ii) = true;
+        recognized = true;
+    elseif any(contains(tokensLow, 'pulseselect'))
+        catheter_primary(ii) = "PULSESELECT";
+        is_pfa_catheter(ii) = true;
+        recognized = true;
+    elseif any(contains(tokensLow, 'farawave'))
+        catheter_primary(ii) = "FARAWAVE";
+        is_pfa_catheter(ii) = true;
+        recognized = true;
+    elseif any(contains(tokensLow, 'other catheters (rf)') | strcmpi(tokensLow, 'rf'))
+        catheter_primary(ii) = "RF";
+        is_rf_catheter(ii) = true;
+        recognized = true;
+    elseif any(contains(tokensLow, 'cryo'))
+        catheter_primary(ii) = "CRYO";
+        recognized = true;
+    end
+
+    if ~recognized && ~isempty(tokens)
+        % Legacy fallback: first token as label.
+        catheter_primary(ii) = upper(tokens(1));
+        recognized = true;
+    end
+
+    catheter_defined(ii) = recognized;
+end
 
 end
