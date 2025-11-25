@@ -136,6 +136,28 @@ service(service == "") = "UnknownService";
 caseLocation     = strtrim(string(rawTbl.("Case Location")));
 caseLocation(caseLocation == "") = "UnknownLocation";
 
+% Drop undefined catheter rows (e.g., "None of the above") to avoid length mismatches.
+if any(~catheter_defined)
+    maskKeep = catheter_defined;
+    fprintf('Excluding %d procedures with undefined catheter (e.g., "None of the above").\n', ...
+        sum(~maskKeep));
+    caseIdStr         = caseIdStr(maskKeep);
+    procedureDate     = procedureDate(maskKeep);
+    operatorName      = operatorName(maskKeep);
+    procedureType     = procedureType(maskKeep);
+    suppliesRaw       = suppliesRaw(maskKeep);
+    catheter_primary  = catheter_primary(maskKeep);
+    is_affera         = is_affera(maskKeep);
+    is_pfa_catheter   = is_pfa_catheter(maskKeep);
+    is_rf_catheter    = is_rf_catheter(maskKeep);
+    catheter_defined  = catheter_defined(maskKeep);
+    durationRaw       = durationRaw(maskKeep);
+    procedureDuration = procedureDuration(maskKeep);
+    procedurePrimary  = procedurePrimary(maskKeep);
+    service           = service(maskKeep);
+    caseLocation      = caseLocation(maskKeep);
+end
+
 %% 4. Assemble the analysis-ready table
 tbl = table;
 tbl.procedure_id          = caseIdStr;
@@ -150,12 +172,6 @@ tbl.is_pfa_catheter       = is_pfa_catheter;
 tbl.is_rf_catheter        = is_rf_catheter;
 tbl.catheter_defined      = catheter_defined;
 tbl.exclude_from_analysis = ~catheter_defined;
-
-if any(~catheter_defined)
-    fprintf('Excluding %d procedures with undefined catheter (e.g., "None of the above").\n', ...
-        sum(~catheter_defined));
-    tbl = tbl(catheter_defined, :);
-end
 
 toolType = repmat("other", height(tbl), 1);
 toolType(tbl.is_affera) = "affera";
