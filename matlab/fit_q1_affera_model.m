@@ -239,10 +239,160 @@ else
     comparison_stats.by_catheter = table();
 end
 
+% -------------------------------------------------------------------------
+% Operator-level baseline duration and fast/slow group comparisons
+% (only when baseline_speed_ctr and Affera×baseline are present).
+% -------------------------------------------------------------------------
+
+fastSlow = struct();
+if ~isempty(idxBaselineSpeed) && ~isempty(idxAfferaBaseline) && ...
+        ismember('baseline_speed_ctr', tbl_q1.Properties.VariableNames)
+
+    % Operator-level baseline duration (minutes) and baseline_speed_ctr.
+    ops = categories(tbl_q1.operator_id);
+    nOps = numel(ops);
+    opBaselineMeanMin   = nan(nOps, 1);
+    opBaselineMedianMin = nan(nOps, 1);
+    opBaselineSpeedCtr  = nan(nOps, 1);
+
+    for k = 1:nOps
+        op = ops{k};
+        maskOpBase = (tbl_q1.operator_id == op) & baselineMask & ~afferaMask;
+        if any(maskOpBase)
+            opBaselineMeanMin(k)   = mean(duration(maskOpBase), 'omitnan');
+            opBaselineMedianMin(k) = median(duration(maskOpBase), 'omitnan');
+            opBaselineSpeedCtr(k)  = mean(tbl_q1.baseline_speed_ctr(maskOpBase), 'omitnan');
+        end
+    end
+
+    validOps = isfinite(opBaselineMeanMin) & isfinite(opBaselineSpeedCtr);
+    if any(validOps)
+        fastSlow.baseline_mean_per_op   = opBaselineMeanMin;
+        fastSlow.baseline_median_per_op = opBaselineMedianMin;
+        fastSlow.baseline_speed_ctr_per_op = opBaselineSpeedCtr;
+
+        % Quartile-based groups on operator-level baseline mean duration.
+        q = quantile(opBaselineMeanMin(validOps), [0.25 0.50 0.75]);
+        q1 = q(1);
+        q2 = q(2);
+        q3 = q(3);
+        maskQ1 = validOps & (opBaselineMeanMin <= q1);
+        maskQ2 = validOps & (opBaselineMeanMin > q1  & opBaselineMeanMin <= q2);
+        maskQ3 = validOps & (opBaselineMeanMin > q2  & opBaselineMeanMin <= q3);
+        maskQ4 = validOps & (opBaselineMeanMin > q3);
+
+        fastMaskOp = maskQ1;
+        slowMaskOp = maskQ4;
+
+        if any(fastMaskOp) && any(slowMaskOp)
+            fastSlow.fast_operator_ids = categorical(ops(fastMaskOp));
+            fastSlow.slow_operator_ids = categorical(ops(slowMaskOp));
+            fastSlow.n_fast_ops = sum(fastMaskOp);
+            fastSlow.n_slow_ops = sum(slowMaskOp);
+
+            fastSlow.baseline_mean_duration_fast   = mean(opBaselineMeanMin(fastMaskOp), 'omitnan');
+            fastSlow.baseline_median_duration_fast = median(opBaselineMeanMin(fastMaskOp), 'omitnan');
+            fastSlow.baseline_mean_duration_slow   = mean(opBaselineMeanMin(slowMaskOp), 'omitnan');
+            fastSlow.baseline_median_duration_slow = median(opBaselineMeanMin(slowMaskOp), 'omitnan');
+
+            % Build contrasts for each quartile group (PVI-only Affera effect).
+            covB = lme.CoefficientCovariance;
+            df = lme.DFE;
+            tcrit = tinv(0.975, df);
+
+            quartMasks = {maskQ1, maskQ2, maskQ3, maskQ4};
+            quartiles(1:4) = struct('n_ops', 0);
+            refContrast = [];
+
+            for qIdx = 1:4
+                m = quartMasks{qIdx};
+                if ~any(m)
+                    quartiles(qIdx).n_ops = 0;
+                    continue;
+                end
+                b_q = mean(opBaselineSpeedCtr(m), 'omitnan');
+                mean_q = mean(opBaselineMeanMin(m), 'omitnan');
+                med_q  = median(opBaselineMeanMin(m), 'omitnan');
+
+                c_q = zeros(numel(beta), 1);
+                c_q(idxAffera) = 1;
+                c_q(idxAfferaBaseline) = b_q;
+
+                beta_q = c_q' * beta;
+                var_q  = c_q' * covB * c_q;
+                se_q   = sqrt(max(var_q, 0));
+                ci_q_log = [beta_q - tcrit * se_q, ...
+                            beta_q + tcrit * se_q];
+                pct_q     = (exp(beta_q)      - 1) * 100;
+                pct_q_lo  = (exp(ci_q_log(1)) - 1) * 100;
+                pct_q_hi  = (exp(ci_q_log(2)) - 1) * 100;
+                p_q = NaN;
+                if se_q > 0 && isfinite(df) && df > 0
+                    t_q = beta_q / se_q;
+                    p_q = 2 * tcdf(-abs(t_q), df);
+                end
+
+                quartiles(qIdx).n_ops = sum(m);
+                quartiles(qIdx).baseline_mean_duration = mean_q;
+                quartiles(qIdx).baseline_median_duration = med_q;
+                quartiles(qIdx).b = b_q;
+                quartiles(qIdx).beta = beta_q;
+                quartiles(qIdx).ci = ci_q_log;
+                quartiles(qIdx).pct_est = pct_q;
+                quartiles(qIdx).pct_lo = pct_q_lo;
+                quartiles(qIdx).pct_hi = pct_q_hi;
+                quartiles(qIdx).pValue = p_q;
+
+                if qIdx == 1
+                    refContrast = c_q;
+                end
+            end
+
+            fastSlow.quartiles = quartiles;
+
+            % Also keep explicit fast (Q1) and slow (Q4) entries and their difference.
+            if quartiles(1).n_ops > 0 && quartiles(4).n_ops > 0
+                fastSlow.fast = quartiles(1);
+                fastSlow.slow = quartiles(4);
+
+                c_diff = zeros(numel(beta), 1);
+                c_diff = (quartiles(4).b - quartiles(1).b) * 0;
+                % Directly use difference of contrasts for slow vs fast.
+                c_fast = refContrast;
+                c_slow = zeros(numel(beta), 1);
+                c_slow(idxAffera) = 1;
+                c_slow(idxAfferaBaseline) = quartiles(4).b;
+                c_diff = c_slow - c_fast;
+
+                beta_diff = c_diff' * beta;
+                var_diff  = c_diff' * covB * c_diff;
+                se_diff   = sqrt(max(var_diff, 0));
+                ci_diff_log = [beta_diff - tcrit * se_diff, ...
+                               beta_diff + tcrit * se_diff];
+                pct_diff     = (exp(beta_diff)      - 1) * 100;
+                pct_diff_lo  = (exp(ci_diff_log(1)) - 1) * 100;
+                pct_diff_hi  = (exp(ci_diff_log(2)) - 1) * 100;
+                p_diff = NaN;
+                if se_diff > 0 && isfinite(df) && df > 0
+                    t_diff = beta_diff / se_diff;
+                    p_diff = 2 * tcdf(-abs(t_diff), df);
+                end
+
+                fastSlow.delta_slow_vs_fast = struct('beta', beta_diff, 'ci', ci_diff_log, ...
+                    'pct_est', pct_diff, 'pct_lo', pct_diff_lo, 'pct_hi', pct_diff_hi, ...
+                    'pValue', p_diff);
+            end
+        end
+    end
+end
+
 results.baseline_stats = baseline_stats;
 results.affera_stats   = affera_stats;
 results.comparison_stats = comparison_stats;
 % Backward-compatible field name (legacy non-PFA naming).
 results.post_non_pfa_stats = comparison_stats;
+if ~isempty(fieldnames(fastSlow))
+    results.fastSlow = fastSlow;
+end
 
 end

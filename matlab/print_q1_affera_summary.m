@@ -210,7 +210,7 @@ for i = 1:numel(results.names)
         pVal = results.pValue(i);
     end
 
-    fprintf('%-25s %10.1f%% %15s %6.1f%%, %6.1f%%] %12.3g\n', ...
+    fprintf('%-25s %10.2f%% %15s %6.1f%%, %6.1f%%] %12.3g\n', ...
         name, pe, '[', peLo, peHi, pVal);
 end
 
@@ -286,6 +286,28 @@ if isfield(results, 'idxAfferaBaseline') && ~isempty(results.idxAfferaBaseline)
         results.pct_est(i), results.pct_lo(i), results.pct_hi(i));
     if isfield(results, 'pValue') && numel(results.pValue) >= i
         fprintf('  p-value = %.3g\n', results.pValue(i));
+    end
+end
+
+% Quartile-based Affera effects by baseline operator speed (PVI-only).
+if isfield(results, 'fastSlow')
+    fs = results.fastSlow;
+    if isfield(fs, 'quartiles')
+        qs = fs.quartiles;
+        fprintf('\nAffera effect by baseline operator speed quartiles (PVI-only):\n');
+        for qIdx = 1:numel(qs)
+            if qs(qIdx).n_ops <= 0
+                continue;
+            end
+            fprintf('  Q%d (baseline RF median %.1f min, n = %d): Affera effect = %.1f%% [%.1f, %.1f]%% (p = %.3g)\n', ...
+                qIdx, qs(qIdx).baseline_median_duration, qs(qIdx).n_ops, ...
+                qs(qIdx).pct_est, qs(qIdx).pct_lo, qs(qIdx).pct_hi, qs(qIdx).pValue);
+        end
+        if isfield(fs, 'delta_slow_vs_fast')
+            d = fs.delta_slow_vs_fast;
+            fprintf('  Difference (Q4 vs Q1) in Affera effect = %.1f%% [%.1f, %.1f]%% (p = %.3g)\n', ...
+                d.pct_est, d.pct_lo, d.pct_hi, d.pValue);
+        end
     end
 end
 
